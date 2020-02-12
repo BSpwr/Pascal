@@ -30,6 +30,22 @@ grammar PascalR;
             this.variables.replace(key, v);
           }
       }
+      else if (this.reserved.containsKey(key)){
+          Boolean isValid = new Boolean(false);
+          ArrayList<String> arr = this.enums.get(this.enumVariableType.get(key));
+          for(String s : arr){
+              if(s.equals(val)){
+                  isValid = new Boolean(true);
+                  break;
+              }
+          }
+          if(isValid = true){
+              this.reserved.replace(key, (String)val);
+          }
+          else{
+              this.throwE("Attempted to assign an enum of a different or undefined type.");
+          }
+      }
       else if (this.constants.containsKey(key)){
           this.throwE("Attempted to assign to a constant.");
       }
@@ -45,7 +61,22 @@ grammar PascalR;
      else if(this.constants.containsKey(key)){
         return this.constants.get(key);
      }
+     else if(this.reserved.containsKey(key)){
+        return this.reserved.get(key);
+     }
      else {
+        if(this.debug == true){
+            System.out.println("Checking if the identifier is an enum.");
+        }
+        if(key instanceof String){
+            for(HashMap.Entry<String, ArrayList<String>> anenum : this.enums.entrySet()){
+                for(String s : anenum.getValue()){
+                    if(s.equals((String)key)){
+                        return key;
+                    }
+                }
+            }
+        }
         this.throwE("Undefined symbol.");
         return null;
      }
@@ -53,10 +84,18 @@ grammar PascalR;
 
   Boolean debug = new Boolean(false);
   Boolean toggle = new Boolean(false);
-  Boolean hasMoreVars = new Boolean(false);
+
+  Stack<Boolean> branchHistory = new Stack<Boolean>();
+
+  Boolean breakCase = new Boolean(false);
+  Object caseSel;
 
   HashMap<String,Object> variables = new HashMap<String,Object>();
   HashMap<String,Object> constants = new HashMap<String,Object>();
+  HashMap<String,ArrayList<String>> enums = new HashMap<String,ArrayList<String>>();
+
+  HashMap<String,String> enumVariableType = new HashMap<String,String>();
+  HashMap<String,String> reserved = new HashMap<String,String>();
 }
 
 debug
@@ -112,14 +151,48 @@ progLab: BGN {
 
 /** Program Operations */
 
-typeDef:;
+typeDef:
+    identifier EQU LPA typeType RPA SEM (typeDef)? {
+        this.enums.put($identifier.s, $typeType.s);
+        //print out the variable map
+        if( this.debug == true){
+            for(HashMap.Entry<String, ArrayList<String>> anenum : this.enums.entrySet()){
+                System.out.println("\tType:" + anenum.getKey());
+                for(String s : anenum.getValue()){
+                    System.out.println("\tValue:" + s);
+                }
+            }
+        }
+    }
+    ;
+
+typeType returns[ArrayList<String> s]:
+    identifier {
+        $s = new ArrayList<String>();
+        $s.add($identifier.s);
+    }(COM typeType{
+        $s.addAll($typeType.s);
+    })?
+    ;
 
 varDef:
     varList COL varType SEM (varDef)? {
-        this.variables.putAll(IntStream.range(0, $varList.s.size())
-                               .collect(HashMap::new,
-                               (map, i) -> map.put($varList.s.get(i), $varType.o),
-                               Map::putAll));
+        if($varType.o instanceof String && !(((String)$varType.o).isEmpty())){
+            this.enumVariableType.putAll(IntStream.range(0, $varList.s.size())
+                                            .collect(HashMap::new,
+                                            (map, i) -> map.put($varList.s.get(i), (String)$varType.o),
+                                            Map::putAll));
+            this.reserved.putAll(IntStream.range(0, $varList.s.size())
+                                   .collect(HashMap::new,
+                                   (map, i) -> map.put($varList.s.get(i), (String)$varType.o),
+                                   Map::putAll));
+        }
+        else{
+            this.variables.putAll(IntStream.range(0, $varList.s.size())
+                                   .collect(HashMap::new,
+                                   (map, i) -> map.put($varList.s.get(i), $varType.o),
+                                   Map::putAll));
+        }
         //print out the variable map
         if( this.debug == true){
             System.out.println("VARs defined:");
@@ -129,17 +202,17 @@ varDef:
                 System.out.println("\tValue:" + this.variables.get(varNames.get(i)));
             }
         }
-    };
+    }
+    ;
 
 varList returns[ArrayList<String> s]:
-    identifier (COM varList{ this.hasMoreVars = new Boolean(true); })? {
-        $s = new ArrayList<String>();
-        $s.add($identifier.s);
-        if(hasMoreVars == true){
-            $s.addAll($varList.s);
-            this.hasMoreVars = new Boolean(false);
-        }
-    };
+    identifier {
+       $s = new ArrayList<String>();
+       $s.add($identifier.s);
+    }(COM varList{
+       $s.addAll($varList.s);
+    })?
+    ;
 
 varType returns[Object o]:(
         INT {
@@ -160,18 +233,35 @@ varType returns[Object o]:(
         | arrayAlloc {
             $o = $arrayAlloc.o;
         }
+        | identifier {
+            if(this.enums.containsKey($identifier.s)){
+                $o = $identifier.s;
+            }
+            else {
+                $o = null;
+            }
+        }
 );
 
 arrayAlloc returns[ArrayList<Object> o]:
-    ARR '[' low=INV '..' hi=INV ']' OF varType{
-        Integer length = Integer.parseInt($hi.text) - Integer.parseInt($low.text);
-        $o = new ArrayList<Object>(length + 1);
-        $o.add(length);
-        for(int i = 0; i < length; i++){
-            $o.add($varType.o);
+    ARR '[' range ']' OF varType{
+        if($range.l instanceof Integer && $range.h instanceof Integer){
+            Integer length = (Integer)$range.h - (Integer)$range.l;
+            $o = new ArrayList<Object>(length + 1);
+            $o.add(length);
+            for(int i = 0; i < length; i++){
+                $o.add($varType.o);
+            }
         }
     }
 ;
+
+range returns[Object l, Object h]:
+    low=INV '..' hi=INV{
+        $l = $low;
+        $h = $hi;
+    }
+    ;
 
 constDef:
     varList EQU expr SEM {
@@ -194,7 +284,7 @@ constDef:
 /* Logic */
 implementation:
     branch
-    | case
+    | cases
     | comment
     | singleStatement SEM
     ;
@@ -208,32 +298,129 @@ singleStatement:
 
 branch:
     IF expr{
+        this.branchHistory.push(this.toggle);
         if(this.toggle != true){
             this.toggle = new Boolean(!(Boolean)$expr.o);
+            if( this.debug == true){
+                System.out.println("Pushed to the stack.\nStack contains: ");
+                for(Boolean b : this.branchHistory){
+                    System.out.println(b + "\n");
+                }
+            }
         }
     } THN {
         if( this.debug == true){
             System.out.println("Entering inner case.");
         }
-    } ((BGN (implementation)* END)|singleStatement){this.toggle = new Boolean(!this.toggle);} (SEM{this.toggle = new Boolean(false);})? {
+    } ((BGN (implementation)* END)|singleStatement){this.toggle = new Boolean(!this.toggle);} (SEM{
         if( this.debug == true){
             System.out.println("Exiting inner case.");
         }
-    } (ELS ((BGN (implementation)* END)|singleStatement))? SEM{this.toggle = new Boolean(false);}
-    ;
-
-case:
-    CAS expr OF caseList{
-        if(this.toggle != true){
-            if($expr.o instanceof Character || $expr.o instanceof Integer){
-                
+    } | elseCase){
+        this.toggle = new Boolean(this.branchHistory.pop());
+        if( this.debug == true){
+            System.out.println("Popped from the stack.\nStack contains: ");
+            for(Boolean b : this.branchHistory){
+                System.out.println(b + "\n");
             }
         }
     }
     ;
 
-caseList returns[<Object,Object>]:
-    CAS
+cases:
+    CAS expr OF{
+        this.branchHistory.push(this.toggle);
+        if( this.debug == true){
+            System.out.println("Pushed to the stack.\nStack contains: ");
+            for(Boolean b : this.branchHistory){
+                System.out.println(b + "\n");
+            }
+        }
+        if(this.toggle != true){
+            if($expr.o instanceof Character || $expr.o instanceof Integer || $expr.o instanceof String){
+                this.caseSel = $expr.o;
+            }
+            else{
+                throwE("Illegal Operation: Invalid type for case structure!");
+            }
+        }
+    } caseList {
+        this.toggle = new Boolean(this.branchHistory.pop());
+        if( this.debug == true){
+            System.out.println("Popped from the stack.\nStack contains: ");
+            for(Boolean b : this.branchHistory){
+                System.out.println(b + "\n");
+            }
+        }
+    }
+    ;
+
+caseList:
+    (caseStatement)* (elseCase)? END SEM{
+        this.breakCase = new Boolean(false);
+    }
+    ;
+
+caseStatement:
+    (expr{
+        if(this.toggle != true && this.breakCase != true){
+            if(this.debug == true){
+                System.out.println("The pattern to match is " + $expr.o);
+                if($expr.o instanceof Character){
+                    System.out.println("Its type is Character!");
+                }
+                else if($expr.o instanceof Integer){
+                    System.out.println("Its type is Integer!");
+                }
+                else if($expr.o instanceof String){
+                    System.out.println("Its type is String!");
+                }
+            }
+            if(($expr.o instanceof Character && this.caseSel instanceof Character)
+                || ($expr.o instanceof Integer && this.caseSel instanceof Integer)
+                || ($expr.o instanceof String && this.caseSel instanceof String)){
+
+                if($expr.o.equals(this.caseSel)){
+                    this.toggle = new Boolean(false);
+                    this.breakCase = new Boolean(true);
+                }
+                else{
+                    this.toggle = new Boolean(true);
+                }
+            }
+            else{
+                throwE("Illegal Operation: Invalid type for case structure!");
+            }
+        }
+    }|range{
+        if(this.toggle != true && this.breakCase != true){
+            if(($range.l instanceof Character && this.caseSel instanceof Character)
+                || ($range.l instanceof Integer && this.caseSel instanceof Integer)){
+
+                if((Integer)$range.l < (Integer)this.caseSel || (Integer)$range.h > (Integer)this.caseSel){
+                    this.toggle = new Boolean(false);
+                    this.breakCase = new Boolean(true);
+                }
+                else{
+                    this.toggle = new Boolean(true);
+                }
+            }
+            else{
+                throwE("Illegal Operation: Invalid type for case structure!");
+            }
+        }
+    }) COL ((((BGN(implementation)*END SEM)|(singleStatement SEM)))|SEM){
+        if(this.breakCase == true){
+            this.toggle = new Boolean(true);
+        }
+        else{
+            this.toggle = new Boolean(false);
+        }
+    }
+    ;
+
+elseCase:
+    ELS (((BGN(implementation)*END SEM)|(singleStatement SEM)))
     ;
 
 assignment:
@@ -243,6 +430,7 @@ assignment:
         }
     }
     ;
+
 /* Arguments */
 
 args returns[LinkedHashMap<String,Object> o]:
@@ -685,6 +873,9 @@ expr returns[Object o]:
     }
     || identifier {
         if(this.toggle != true){
+            if(this.debug == true){
+                System.out.println($identifier.s);
+            }
             $o = getVariable($identifier.s);
         }
     }
