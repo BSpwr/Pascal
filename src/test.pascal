@@ -1,5 +1,4 @@
 program calculator;
-uses gol;
 
 type meme = (cat, nyan, pepe);
 
@@ -30,11 +29,11 @@ begin
     n:= j*10;
     F:= 0.01234;
     L:= sin(F);
-    writeln(L);
+    writeln("Sin" + L);
     F:= cos(L);
-    writeln(F);
+    writeln("Cos: " + F);
     L:= sqrt(F);
-    writeln(L);
+    writeln("Sqrt: " + L);
     case letterA of
         'C': writeln('Letter was C');
         'B': writeln('Letter was B');

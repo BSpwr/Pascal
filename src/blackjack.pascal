@@ -1,5 +1,0 @@
-program blackjack;
-
-
-
-const

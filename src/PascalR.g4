@@ -1026,7 +1026,7 @@ OF: O F;
 //Loop Words
 WHL: W H I L E;
 FOR: F O R;
-LDO: D O;
+DO: D O;
 RPT: R E P E A T;
 UTL: U N T I L;
 
