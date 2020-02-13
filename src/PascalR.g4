@@ -546,10 +546,10 @@ ln returns[Double d]:
     LN LPA expr RPA{
         if(this.toggle != true){
             if($expr.o instanceof Double){
-                $d = Math.sqrt((Double)$expr.o);
+                $d = Math.log((Double)$expr.o);
             }
             else if($expr.o instanceof Integer){
-                $d = Math.sqrt(Double.valueOf((Integer)$expr.o));
+                $d = Math.log(Double.valueOf((Integer)$expr.o));
             }
             else{
                 throwE("Illegal Operation: Type is not a Real or an Integer!");

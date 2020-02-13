@@ -25,7 +25,7 @@ public class PascalRParser extends Parser {
 		DOT=11, BOL=12, INT=13, REL=14, CHR=15, PTR=16, ADR=17, ENM=18, SBR=19, 
 		ARR=20, STR=21, RCD=22, SET=23, BSE=24, VRT=25, UNI=26, USE=27, VAR=28, 
 		CST=29, TYP=30, PRM=31, BGN=32, END=33, IF=34, THN=35, ELS=36, CAS=37, 
-		OF=38, WHL=39, FOR=40, LDO=41, RPT=42, UTL=43, FUN=44, PRO=45, ITR=46, 
+		OF=38, WHL=39, FOR=40, DO=41, RPT=42, UTL=43, FUN=44, PRO=45, ITR=46, 
 		ADD=47, SUB=48, MUL=49, DIV=50, MOD=51, EQU=52, NEQ=53, GRT=54, LES=55, 
 		GEQ=56, LEQ=57, AND=58, ATH=59, OR=60, ORE=61, NOT=62, BND=63, BOR=64, 
 		BNT=65, BOC=66, BSL=67, BSR=68, XOR=69, SHL=70, SHR=71, RDL=72, WRL=73, 
@@ -72,7 +72,7 @@ public class PascalRParser extends Parser {
 			null, null, null, null, null, "WS", "COL", "SEM", "LPA", "RPA", "COM", 
 			"DOT", "BOL", "INT", "REL", "CHR", "PTR", "ADR", "ENM", "SBR", "ARR", 
 			"STR", "RCD", "SET", "BSE", "VRT", "UNI", "USE", "VAR", "CST", "TYP", 
-			"PRM", "BGN", "END", "IF", "THN", "ELS", "CAS", "OF", "WHL", "FOR", "LDO", 
+			"PRM", "BGN", "END", "IF", "THN", "ELS", "CAS", "OF", "WHL", "FOR", "DO", 
 			"RPT", "UTL", "FUN", "PRO", "ITR", "ADD", "SUB", "MUL", "DIV", "MOD", 
 			"EQU", "NEQ", "GRT", "LES", "GEQ", "LEQ", "AND", "ATH", "OR", "ORE", 
 			"NOT", "BND", "BOR", "BNT", "BOC", "BSL", "BSR", "XOR", "SHL", "SHR", 
@@ -846,7 +846,7 @@ public class PascalRParser extends Parser {
 			setState(171);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__1) | (1L << T__2) | (1L << T__3) | (1L << WS) | (1L << COL) | (1L << SEM) | (1L << LPA) | (1L << RPA) | (1L << COM) | (1L << DOT) | (1L << BOL) | (1L << INT) | (1L << REL) | (1L << CHR) | (1L << PTR) | (1L << ADR) | (1L << ENM) | (1L << SBR) | (1L << ARR) | (1L << STR) | (1L << RCD) | (1L << SET) | (1L << BSE) | (1L << VRT) | (1L << UNI) | (1L << USE) | (1L << VAR) | (1L << CST) | (1L << TYP) | (1L << PRM) | (1L << BGN) | (1L << END) | (1L << IF) | (1L << THN) | (1L << ELS) | (1L << CAS) | (1L << OF) | (1L << WHL) | (1L << FOR) | (1L << LDO) | (1L << RPT) | (1L << UTL) | (1L << FUN) | (1L << PRO) | (1L << ITR) | (1L << ADD) | (1L << SUB) | (1L << MUL) | (1L << DIV) | (1L << MOD) | (1L << EQU) | (1L << NEQ) | (1L << GRT) | (1L << LES) | (1L << GEQ) | (1L << LEQ) | (1L << AND) | (1L << ATH) | (1L << OR) | (1L << ORE) | (1L << NOT) | (1L << BND))) != 0) || ((((_la - 64)) & ~0x3f) == 0 && ((1L << (_la - 64)) & ((1L << (BOR - 64)) | (1L << (BNT - 64)) | (1L << (BOC - 64)) | (1L << (BSL - 64)) | (1L << (BSR - 64)) | (1L << (XOR - 64)) | (1L << (SHL - 64)) | (1L << (SHR - 64)) | (1L << (RDL - 64)) | (1L << (WRL - 64)) | (1L << (SQR - 64)) | (1L << (SIN - 64)) | (1L << (COS - 64)) | (1L << (LN - 64)) | (1L << (EXP - 64)) | (1L << (PI - 64)) | (1L << (TRU - 64)) | (1L << (FLS - 64)) | (1L << (IDE - 64)) | (1L << (INV - 64)) | (1L << (DBV - 64)) | (1L << (STV - 64)))) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__1) | (1L << T__2) | (1L << T__3) | (1L << WS) | (1L << COL) | (1L << SEM) | (1L << LPA) | (1L << RPA) | (1L << COM) | (1L << DOT) | (1L << BOL) | (1L << INT) | (1L << REL) | (1L << CHR) | (1L << PTR) | (1L << ADR) | (1L << ENM) | (1L << SBR) | (1L << ARR) | (1L << STR) | (1L << RCD) | (1L << SET) | (1L << BSE) | (1L << VRT) | (1L << UNI) | (1L << USE) | (1L << VAR) | (1L << CST) | (1L << TYP) | (1L << PRM) | (1L << BGN) | (1L << END) | (1L << IF) | (1L << THN) | (1L << ELS) | (1L << CAS) | (1L << OF) | (1L << WHL) | (1L << FOR) | (1L << DO) | (1L << RPT) | (1L << UTL) | (1L << FUN) | (1L << PRO) | (1L << ITR) | (1L << ADD) | (1L << SUB) | (1L << MUL) | (1L << DIV) | (1L << MOD) | (1L << EQU) | (1L << NEQ) | (1L << GRT) | (1L << LES) | (1L << GEQ) | (1L << LEQ) | (1L << AND) | (1L << ATH) | (1L << OR) | (1L << ORE) | (1L << NOT) | (1L << BND))) != 0) || ((((_la - 64)) & ~0x3f) == 0 && ((1L << (_la - 64)) & ((1L << (BOR - 64)) | (1L << (BNT - 64)) | (1L << (BOC - 64)) | (1L << (BSL - 64)) | (1L << (BSR - 64)) | (1L << (XOR - 64)) | (1L << (SHL - 64)) | (1L << (SHR - 64)) | (1L << (RDL - 64)) | (1L << (WRL - 64)) | (1L << (SQR - 64)) | (1L << (SIN - 64)) | (1L << (COS - 64)) | (1L << (LN - 64)) | (1L << (EXP - 64)) | (1L << (PI - 64)) | (1L << (TRU - 64)) | (1L << (FLS - 64)) | (1L << (IDE - 64)) | (1L << (INV - 64)) | (1L << (DBV - 64)) | (1L << (STV - 64)))) != 0)) {
 				{
 				{
 				setState(168);
@@ -3070,10 +3070,10 @@ public class PascalRParser extends Parser {
 
 			        if(this.toggle != true){
 			            if(((LnContext)_localctx).expr.o instanceof Double){
-			                ((LnContext)_localctx).d =  Math.sqrt((Double)((LnContext)_localctx).expr.o);
+			                ((LnContext)_localctx).d =  Math.log((Double)((LnContext)_localctx).expr.o);
 			            }
 			            else if(((LnContext)_localctx).expr.o instanceof Integer){
-			                ((LnContext)_localctx).d =  Math.sqrt(Double.valueOf((Integer)((LnContext)_localctx).expr.o));
+			                ((LnContext)_localctx).d =  Math.log(Double.valueOf((Integer)((LnContext)_localctx).expr.o));
 			            }
 			            else{
 			                throwE("Illegal Operation: Type is not a Real or an Integer!");
