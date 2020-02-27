@@ -1,8 +1,8 @@
-grammar PascalR;
+grammar Pascal;
 
-// Generate: antlr4 PascalR.g4
-// Compile: javac PascalR*.java
-// Run: grun PascalR program -tree gol.pascal
+// Generate: antlr4 Pascal.g4
+// Compile: javac Pascal*.java
+// Run: grun Pascal program -tree gol.pascal
 
 /**
  * Parser
@@ -98,11 +98,13 @@ grammar PascalR;
   HashMap<String,String> reserved = new HashMap<String,String>();
 }
 
+start : program;
+
 debug
    : {debug = new Boolean(true);} program;
 
 program
-   : (comment)? programHeading (comment)? (ITR)? (comment)? (programImports)? block DOT EOF;
+   : programHeading (ITR)? (programImports)? block DOT EOF;
 
 programHeading returns[Boolean b, String s]
    : (PRM identifier (LPA identifierList RPA)? SEM)
@@ -121,18 +123,12 @@ identifierList
    : identifier (COM identifier)*
    ;
 
-block: (comment)?
-       (typeLab)?
-       (comment)?
-       ((varLab(comment)?(constLab)?)|(constLab(comment)?(varLab)?))
+block: (typeLab)?
+       ((varLab (constLab)?)|(constLab (varLab)?))?
        (progLab)*
-       (comment)?
        ;
 
 /** Program Blocks */
-
-comment: LPA MUL (~'*)')* '*)';
-
 typeLab: TYP typeDef;
 
 varLab: VAR varDef;
@@ -285,7 +281,6 @@ constDef:
 implementation:
     branch
     | cases
-    | comment
     | singleStatement SEM
     ;
 
@@ -1087,3 +1082,8 @@ IDE: [_]*(LTR)([_]|LTR|DGT)*;
 INV: [0-9]+;
 DBV: [0-9]*'.'INV;
 STV: '\''(~'\'')+'\'';
+
+INLINE_COMMENT:		'//' .*? '\n'	-> skip;
+INLINE_COMMENT_2:	'{' ~'\n'*? '}'	-> skip;
+BLOCK_COMMENT:		'(*' .*? '*)'	-> skip;
+BLOCK_COMMENT_2:	'{*' .*? '*}'	-> skip;

@@ -1,9 +1,10 @@
 plugins {
     id 'java'
     id 'antlr'
+    id "application"
 }
 
-group 'org.example'
+group 'pascal'
 version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
@@ -19,5 +20,28 @@ dependencies {
 
 generateGrammarSource {
     maxHeapSize = "64m"
-    arguments += ["-visitor"]
+    arguments += ["-visitor", "-no-listener", "-package", "pascal"]
+    outputDirectory = file("build/generated-src/java")
+}
+
+sourceSets {
+    main {
+        java.srcDirs = ['src/main/java', 'build/generated-src/java']
+    }
+}
+
+compileJava.dependsOn(generateGrammarSource)
+
+application.mainClassName = 'pascal.Main'
+
+jar {
+    manifest {
+        attributes 'Main-Class': mainClassName,
+                'Class-Path': configurations.runtime.files.collect {"$it.name"}.join(' ')
+    }
+}
+
+task execute(type: Exec) {
+    commandLine 'build/install/Pascal2/bin/Pascal2', 'src/test/boris_old_tests/hello_world.pas'
+    ignoreExitValue true
 }
