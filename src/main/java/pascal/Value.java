@@ -6,6 +6,12 @@ public class Value {
 
     public static Value VOID = new Value(new Object());
 
+    public static Value BOOLEAN = new Value(false);
+    public static Value INTEGER = new Value(0);
+    public static Value REAL = new Value(0.0D);
+    public static Value CHARACTER = new Value('\0');
+    public static Value STRING = new Value("\0");
+
     public final Object value;
 
     public Value(Object value) {

@@ -7,98 +7,8 @@ grammar Pascal;
 /**
  * Parser
  */
-@header{
-  import java.io.*;
-  import java.util.*;
-  import java.util.stream.IntStream;
-}
 
-@members{
-  public void throwE(String msg){
-    System.out.println(msg);
-    System.exit(1);
-  }
-
-  public void setVariable(String key, Object val){
-      if(this.variables.containsKey(key)){
-          Object v = val;
-          Object k = getVariable(key);
-          if(k instanceof Boolean && v instanceof Integer){
-            v = new Boolean((Integer)val >= 1);
-          }
-          if(v.getClass().equals(k.getClass())){
-            this.variables.replace(key, v);
-          }
-      }
-      else if (this.reserved.containsKey(key)){
-          Boolean isValid = new Boolean(false);
-          ArrayList<String> arr = this.enums.get(this.enumVariableType.get(key));
-          for(String s : arr){
-              if(s.equals(val)){
-                  isValid = new Boolean(true);
-                  break;
-              }
-          }
-          if(isValid = true){
-              this.reserved.replace(key, (String)val);
-          }
-          else{
-              this.throwE("Attempted to assign an enum of a different or undefined type.");
-          }
-      }
-      else if (this.constants.containsKey(key)){
-          this.throwE("Attempted to assign to a constant.");
-      }
-      else {
-          this.throwE("Undefined symbol.");
-      }
-  }
-
-  public Object getVariable(String key){
-     if(this.variables.containsKey(key)){
-        return this.variables.get(key);
-     }
-     else if(this.constants.containsKey(key)){
-        return this.constants.get(key);
-     }
-     else if(this.reserved.containsKey(key)){
-        return this.reserved.get(key);
-     }
-     else {
-        if(this.debug == true){
-            System.out.println("Checking if the identifier is an enum.");
-        }
-        if(key instanceof String){
-            for(HashMap.Entry<String, ArrayList<String>> anenum : this.enums.entrySet()){
-                for(String s : anenum.getValue()){
-                    if(s.equals((String)key)){
-                        return key;
-                    }
-                }
-            }
-        }
-        this.throwE("Undefined symbol.");
-        return null;
-     }
-  }
-
-  Boolean debug = new Boolean(false);
-  Boolean toggle = new Boolean(false);
-
-  Stack<Boolean> branchHistory = new Stack<Boolean>();
-
-  Boolean breakCase = new Boolean(false);
-  Object caseSel;
-
-  HashMap<String,Object> variables = new HashMap<String,Object>();
-  HashMap<String,Object> constants = new HashMap<String,Object>();
-  HashMap<String,ArrayList<String>> enums = new HashMap<String,ArrayList<String>>();
-
-  HashMap<String,String> enumVariableType = new HashMap<String,String>();
-  HashMap<String,String> reserved = new HashMap<String,String>();
-}
-
-start : program;
+start : debug;
 
 debug
    : program;
@@ -132,15 +42,8 @@ varLab: VAR varDef;
 
 constLab: CST constDef;
 
-progLab: BGN {
-    if( this.debug == true){
-        System.out.println("Begin Program");
-    }
-} (implementation)* END{
-    if( this.debug == true){
-        System.out.println("End Program");
-    }
-};
+progLab: BGN
+(implementation)* END;
 
 /** Program Operations */
 
