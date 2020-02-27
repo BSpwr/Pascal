@@ -101,13 +101,12 @@ grammar Pascal;
 start : program;
 
 debug
-   : {debug = new Boolean(true);} program;
+   : program;
 
 program
    : programHeading (ITR)? (programImports)? block DOT EOF;
 
-programHeading returns[Boolean b, String s]
-   : (PRM identifier (LPA identifierList RPA)? SEM)
+programHeading: (PRM identifier (LPA identifierList RPA)? SEM)
    | (UNI identifier)
 ;
 
@@ -115,9 +114,7 @@ programImports
    : USE identifier SEM
    ;
 
-identifier returns[String s]:
-   IDE {$s = $IDE.text;}
-   ;
+identifier: IDE;
 
 identifierList
    : identifier (COM identifier)*
@@ -148,133 +145,42 @@ progLab: BGN {
 /** Program Operations */
 
 typeDef:
-    identifier EQU LPA typeType RPA SEM (typeDef)? {
-        this.enums.put($identifier.s, $typeType.s);
-        //print out the variable map
-        if( this.debug == true){
-            for(HashMap.Entry<String, ArrayList<String>> anenum : this.enums.entrySet()){
-                System.out.println("\tType:" + anenum.getKey());
-                for(String s : anenum.getValue()){
-                    System.out.println("\tValue:" + s);
-                }
-            }
-        }
-    }
+    identifier EQU LPA typeType RPA SEM (typeDef)?
     ;
 
-typeType returns[ArrayList<String> s]:
-    identifier {
-        $s = new ArrayList<String>();
-        $s.add($identifier.s);
-    }(COM typeType{
-        $s.addAll($typeType.s);
-    })?
+typeType:
+    identifier (COM typeType)?
     ;
 
 varDef:
-    varList COL varType SEM (varDef)? {
-        if($varType.o instanceof String && !(((String)$varType.o).isEmpty())){
-            this.enumVariableType.putAll(IntStream.range(0, $varList.s.size())
-                                            .collect(HashMap::new,
-                                            (map, i) -> map.put($varList.s.get(i), (String)$varType.o),
-                                            Map::putAll));
-            this.reserved.putAll(IntStream.range(0, $varList.s.size())
-                                   .collect(HashMap::new,
-                                   (map, i) -> map.put($varList.s.get(i), (String)$varType.o),
-                                   Map::putAll));
-        }
-        else{
-            this.variables.putAll(IntStream.range(0, $varList.s.size())
-                                   .collect(HashMap::new,
-                                   (map, i) -> map.put($varList.s.get(i), $varType.o),
-                                   Map::putAll));
-        }
-        //print out the variable map
-        if( this.debug == true){
-            System.out.println("VARs defined:");
-            ArrayList<String> varNames = $varList.s;
-            for(int i = 0; i < varNames.size(); i++){
-                System.out.println("\tIdentifier:" + varNames.get(i));
-                System.out.println("\tValue:" + this.variables.get(varNames.get(i)));
-            }
-        }
-    }
+    varList COL varType SEM (varDef)?
     ;
 
-varList returns[ArrayList<String> s]:
-    identifier {
-       $s = new ArrayList<String>();
-       $s.add($identifier.s);
-    }(COM varList{
-       $s.addAll($varList.s);
-    })?
+varList:
+    identifier (COM varList)?
     ;
 
-varType returns[Object o]:(
-        INT {
-            $o = new Integer(0);
-        }
-        | REL {
-            $o = new Double(0);
-        }
-        | BOL {
-            $o = new Boolean(false);
-        }
-        | CHR {
-            $o = new Character('\0');
-        }
-        | STR ('[' INV ']')?{
-            $o = new String();
-        }
-        | arrayAlloc {
-            $o = $arrayAlloc.o;
-        }
-        | identifier {
-            if(this.enums.containsKey($identifier.s)){
-                $o = $identifier.s;
-            }
-            else {
-                $o = null;
-            }
-        }
-);
+varType:
+        INT
+        | REL
+        | BOL
+        | CHR
+        | STR ('[' INV ']')?
+        | arrayAlloc
+        | identifier
+    ;
 
-arrayAlloc returns[ArrayList<Object> o]:
-    ARR '[' range ']' OF varType{
-        if($range.l instanceof Integer && $range.h instanceof Integer){
-            Integer length = (Integer)$range.h - (Integer)$range.l;
-            $o = new ArrayList<Object>(length + 1);
-            $o.add(length);
-            for(int i = 0; i < length; i++){
-                $o.add($varType.o);
-            }
-        }
-    }
-;
+arrayAlloc :
+    ARR '[' range ']' OF varType
+    ;
 
-range returns[Object l, Object h]:
-    low=INV '..' hi=INV{
-        $l = $low;
-        $h = $hi;
-    }
+range:
+    low=INV '..' hi=INV
     ;
 
 constDef:
-    varList EQU expr SEM {
-        this.constants.putAll(IntStream.range(0, $varList.s.size())
-                               .collect(HashMap::new,
-                               (map, i) -> map.put($varList.s.get(i), $expr.o),
-                               Map::putAll));
-        //Print out constants from hashmap
-        if( this.debug == true){
-            System.out.println("CONSTs defined:");
-            ArrayList<String> varNames = $varList.s;
-            for(int i = 0; i < varNames.size(); i++){
-                System.out.println("\tIdentifier:" + varNames.get(i));
-                System.out.println("\tValue:" + this.constants.get(varNames.get(i)));
-            }
-        }
-    } (constDef)?
+    varList EQU expr SEM
+    (constDef)?
 ;
 
 /* Logic */
@@ -292,126 +198,24 @@ singleStatement:
     ;
 
 branch:
-    IF expr{
-        this.branchHistory.push(this.toggle);
-        if(this.toggle != true){
-            this.toggle = new Boolean(!(Boolean)$expr.o);
-            if( this.debug == true){
-                System.out.println("Pushed to the stack.\nStack contains: ");
-                for(Boolean b : this.branchHistory){
-                    System.out.println(b + "\n");
-                }
-            }
-        }
-    } THN {
-        if( this.debug == true){
-            System.out.println("Entering inner case.");
-        }
-    } ((BGN (implementation)* END)|singleStatement){this.toggle = new Boolean(!this.toggle);} (SEM{
-        if( this.debug == true){
-            System.out.println("Exiting inner case.");
-        }
-    } | elseCase){
-        this.toggle = new Boolean(this.branchHistory.pop());
-        if( this.debug == true){
-            System.out.println("Popped from the stack.\nStack contains: ");
-            for(Boolean b : this.branchHistory){
-                System.out.println(b + "\n");
-            }
-        }
-    }
+    IF expr
+    THN
+    ((BGN (implementation)* END)|singleStatement) (SEM| elseCase)
     ;
 
 cases:
-    CAS expr OF{
-        this.branchHistory.push(this.toggle);
-        if( this.debug == true){
-            System.out.println("Pushed to the stack.\nStack contains: ");
-            for(Boolean b : this.branchHistory){
-                System.out.println(b + "\n");
-            }
-        }
-        if(this.toggle != true){
-            if($expr.o instanceof Character || $expr.o instanceof Integer || $expr.o instanceof String){
-                this.caseSel = $expr.o;
-            }
-            else{
-                throwE("Illegal Operation: Invalid type for case structure!");
-            }
-        }
-    } caseList {
-        this.toggle = new Boolean(this.branchHistory.pop());
-        if( this.debug == true){
-            System.out.println("Popped from the stack.\nStack contains: ");
-            for(Boolean b : this.branchHistory){
-                System.out.println(b + "\n");
-            }
-        }
-    }
+    CAS expr OF
+    caseList
     ;
 
 caseList:
-    (caseStatement)* (elseCase)? END SEM{
-        this.breakCase = new Boolean(false);
-    }
+    (caseStatement)* (elseCase)? END SEM
     ;
 
 caseStatement:
-    (expr{
-        if(this.toggle != true && this.breakCase != true){
-            if(this.debug == true){
-                System.out.println("The pattern to match is " + $expr.o);
-                if($expr.o instanceof Character){
-                    System.out.println("Its type is Character!");
-                }
-                else if($expr.o instanceof Integer){
-                    System.out.println("Its type is Integer!");
-                }
-                else if($expr.o instanceof String){
-                    System.out.println("Its type is String!");
-                }
-            }
-            if(($expr.o instanceof Character && this.caseSel instanceof Character)
-                || ($expr.o instanceof Integer && this.caseSel instanceof Integer)
-                || ($expr.o instanceof String && this.caseSel instanceof String)){
-
-                if($expr.o.equals(this.caseSel)){
-                    this.toggle = new Boolean(false);
-                    this.breakCase = new Boolean(true);
-                }
-                else{
-                    this.toggle = new Boolean(true);
-                }
-            }
-            else{
-                throwE("Illegal Operation: Invalid type for case structure!");
-            }
-        }
-    }|range{
-        if(this.toggle != true && this.breakCase != true){
-            if(($range.l instanceof Character && this.caseSel instanceof Character)
-                || ($range.l instanceof Integer && this.caseSel instanceof Integer)){
-
-                if((Integer)$range.l < (Integer)this.caseSel || (Integer)$range.h > (Integer)this.caseSel){
-                    this.toggle = new Boolean(false);
-                    this.breakCase = new Boolean(true);
-                }
-                else{
-                    this.toggle = new Boolean(true);
-                }
-            }
-            else{
-                throwE("Illegal Operation: Invalid type for case structure!");
-            }
-        }
-    }) COL ((((BGN(implementation)*END SEM)|(singleStatement SEM)))|SEM){
-        if(this.breakCase == true){
-            this.toggle = new Boolean(true);
-        }
-        else{
-            this.toggle = new Boolean(false);
-        }
-    }
+    (expr
+    |range)
+    COL ((((BGN(implementation)*END SEM)|(singleStatement SEM)))|SEM)
     ;
 
 elseCase:
@@ -419,26 +223,14 @@ elseCase:
     ;
 
 assignment:
-    identifier COL EQU expr{
-        if(this.toggle != true){
-            setVariable($identifier.s, $expr.o);
-        }
-    }
+    identifier COL EQU expr
     ;
 
 /* Arguments */
 
-args returns[LinkedHashMap<String,Object> o]:
-    v=expr {
-        if(this.toggle != true){
-           $o = new LinkedHashMap<String,Object>();
-           $o.put($v.text,$v.o);
-        }
-    } (COM args {
-        if(this.toggle != true){
-           $o.putAll($args.o);
-        }
-    })?
+args:
+    v=expr
+    (COM args)?
     ;
 
 /* Print Statements */
@@ -448,29 +240,7 @@ writeln:
     ;
 
 writelnFunc:
-    args{
-        if(this.toggle != true){
-            BufferedWriter foutput = new BufferedWriter(new OutputStreamWriter(System.out));
-            for(HashMap.Entry<String, Object> arg : $args.o.entrySet()){
-                if((arg.getValue() instanceof Integer) || (arg.getValue() instanceof Double) || (arg.getValue() instanceof Boolean) || (arg.getValue() instanceof Character) || (arg.getValue() instanceof String)){
-                    try{
-                        foutput.write(arg.getValue().toString());
-                    } catch(IOException e){
-                        System.out.println(e + "Could not write String to buffer!");
-                    };
-                }
-                else{
-                    throwE("Illegal Operation: arg is not a compatible value!");
-                }
-            }
-            try{
-                foutput.write("\n");
-                foutput.flush();
-            } catch(IOException e){
-                System.out.println(e + "Could not flush write buffer!");
-            };
-        }
-    }
+    args
     ;
 
 readln:
@@ -478,465 +248,70 @@ readln:
     ;
 
 readlnFunc:
-    args{
-        if(this.toggle != true){
-           Scanner uinput = new Scanner(System.in);
-           Object v;
-           for(HashMap.Entry<String, Object> arg : $args.o.entrySet()){
-               if(arg.getValue() instanceof Integer){
-                   v = new Integer(uinput.nextInt());
-               }
-               else if(arg.getValue() instanceof Boolean){
-                   v = new String(uinput.nextLine());
-                   if(((String)v).toLowerCase().equals("true") || ((String)v).toLowerCase().equals("false")){
-                        v = Boolean.parseBoolean((String)v);
-                   }
-                   else{
-                        try{
-                            v = Integer.parseInt((String)v);
-                        } catch (NumberFormatException e) {
-                            v = new Integer(0);
-                        }
-                        v = (Boolean)((Integer)v >= 1);
-                   }
-               }
-               else if(arg.getValue() instanceof Double){
-                   v = new Double(uinput.nextDouble());
-               }
-               else if(arg.getValue() instanceof Character){
-                   v = new Character(uinput.next().charAt(0));
-               }
-               else if(arg.getValue() instanceof String){
-                   v = new String(uinput.nextLine());
-               }
-               else{
-                   v = null;
-                   throwE("Illegal Operation: Variable cannot be set from stdin!");
-               }
-               setVariable(arg.getKey(),v);
-            }
-        }
-    }
+    args
     ;
 
 /* Math */
 
-sqrt returns[Double d]:
-    SQR LPA expr RPA{
-        if(this.toggle != true){
-            if($expr.o instanceof Double){
-                $d = Math.sqrt((Double)$expr.o);
-            }
-            else if($expr.o instanceof Integer){
-                $d = Math.sqrt(Double.valueOf((Integer)$expr.o));
-            }
-            else{
-                throwE("Illegal Operation: Type is not a Real or an Integer!");
-            }
-        }
-    }
+sqrt:
+    SQR LPA expr RPA
     ;
 
-ln returns[Double d]:
-    LN LPA expr RPA{
-        if(this.toggle != true){
-            if($expr.o instanceof Double){
-                $d = Math.log((Double)$expr.o);
-            }
-            else if($expr.o instanceof Integer){
-                $d = Math.log(Double.valueOf((Integer)$expr.o));
-            }
-            else{
-                throwE("Illegal Operation: Type is not a Real or an Integer!");
-            }
-        }
-    }
+ln:
+    LN LPA expr RPA
     ;
 
-exp returns[Double d]:
-    EXP LPA expr RPA{
-        if(this.toggle != true){
-            if($expr.o instanceof Double){
-                $d = Math.exp((Double)$expr.o);
-            }
-            else if($expr.o instanceof Integer){
-                $d = Math.exp(Double.valueOf((Integer)$expr.o));
-            }
-            else{
-                throwE("Illegal Operation: Type is not a Real or an Integer!");
-            }
-        }
-    }
+exp:
+    EXP LPA expr RPA
     ;
 
-sine returns[Double d]:
-    SIN LPA expr RPA{
-        if(this.toggle != true){
-            if($expr.o instanceof Double){
-                $d = Math.sin((Double)$expr.o);
-            }
-            else if($expr.o instanceof Integer){
-                $d = Math.sin(Double.valueOf((Integer)$expr.o));
-            }
-            else{
-                throwE("Illegal Operation: Type is not a Real or an Integer!");
-            }
-        }
-    }
+sine:
+    SIN LPA expr RPA
     ;
 
-cosine returns[Double d]:
-    COS LPA expr RPA{
-        if(this.toggle != true){
-            if($expr.o instanceof Double){
-                $d = Math.cos((Double)$expr.o);
-            }
-            else if($expr.o instanceof Integer){
-                $d = Math.cos(Double.valueOf((Integer)$expr.o));
-            }
-            else{
-                throwE("Illegal Operation: Type is not a Real or an Integer!");
-            }
-        }
-    }
+cosine:
+    COS LPA expr RPA
     ;
 
 /* Arithmetic */
-expr returns[Object o]:
-    LPA e=expr RPA {
-        if(this.toggle != true){
-            $o = $e.o;
-        }
-    }
-    | BOC el=expr {
-        if(this.toggle != true){
-            if($el.o instanceof Integer || $el.o instanceof Character){
-                $o = ~(Integer)$el.o;
-            }
-            else if($el.o instanceof Boolean){
-                $o = !(Boolean)$el.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | NOT el=expr {
-        if(this.toggle != true){
-            if($el.o instanceof Integer || $el.o instanceof Character){
-                $o = ~(Integer)$el.o;
-            }
-            else if($el.o instanceof Boolean){
-                $o = !(Boolean)$el.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    || el=expr MUL er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o * (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Double)$el.o * (Double)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr DIV er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o / (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Double)$el.o / (Double)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr MOD er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o % (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Double)$el.o % (Double)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr (BND|AND) er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o & (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Boolean)$el.o & (Boolean)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr (SHL|BSL) er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o << (Integer)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr (SHR|BSR) er=expr{
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o >> (Integer)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    || el=expr (BOR|'!'|OR) er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o | (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Boolean)$el.o | (Boolean)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr XOR er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o ^ (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Boolean)$el.o ^ (Boolean)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr ADD er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o + (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Double)$el.o + (Double)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr SUB er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o - (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Double)$el.o - (Double)$er.o;
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    || el=expr EQU er=expr {
-        if(this.toggle != true){
-            if($el.o instanceof Boolean && $er.o instanceof Integer){
-                $o = ((Boolean)$el.o.equals((Integer)$er.o >= 1));
-            }
-            else if($er.o instanceof Boolean && $el.o instanceof Integer){
-                $o = ((Boolean)$er.o.equals((Integer)$el.o >= 1));
-            }
-            else{
-                $o = $el.o.equals($er.o);
-            }
-        }
-    }
-    | el=expr NEQ er=expr {
-        if(this.toggle != true){
-            if($el.o instanceof Boolean && $er.o instanceof Integer){
-                $o = !((Boolean)$el.o.equals((Integer)$er.o >= 1));
-            }
-            else if($er.o instanceof Boolean && $el.o instanceof Integer){
-                $o = !((Boolean)$er.o.equals((Integer)$el.o >= 1));
-            }
-            else{
-                $o = !($el.o.equals($er.o));
-            }
-        }
-    }
-    | el=expr LES er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o < (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Double.compare((Double)$el.o, (Double)$er.o) < 0);
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr LEQ er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o <= (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Double.compare((Double)$el.o, (Double)$er.o) <= 0);
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr GRT er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o > (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Double.compare((Double)$el.o, (Double)$er.o) > 0);
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    | el=expr GEQ er=expr {
-        if(this.toggle != true){
-            if((($el.o instanceof Integer) && ($er.o instanceof Integer)) || (($el.o instanceof Character) && ($er.o instanceof Character))){
-                $o = (Integer)$el.o >= (Integer)$er.o;
-            }
-            else if(($el.o instanceof Double) && ($er.o instanceof Double)){
-                $o = (Double.compare((Double)$el.o, (Double)$er.o) >= 0);
-            }
-            else{
-                $o = null;
-                throwE("Illegal Operation: Incompatible Type!");
-            }
-        }
-    }
-    || el=expr OR ELS er=expr {
-        if(this.toggle != true){
-            if(($el.o instanceof Boolean) && ($er.o instanceof Boolean)){
-                $o = (Boolean)$el.o || (Boolean)$er.o;
-            }
-        }
-    }
-    | el=expr AND THN er=expr {
-        if(this.toggle != true){
-            if(($el.o instanceof Boolean) && ($er.o instanceof Boolean)){
-                $o = (Boolean)$el.o && (Boolean)$er.o;
-            }
-        }
-    }
-    || identifier {
-        if(this.toggle != true){
-            if(this.debug == true){
-                System.out.println($identifier.s);
-            }
-            $o = getVariable($identifier.s);
-        }
-    }
-    || PI{
-        if(this.toggle != true){
-            $o = new Double(Math.PI);
-        }
-    }
-    || TRU {
-        if(this.toggle != true){
-            $o = new Boolean(true);
-        }
-    }
-    || FLS {
-        if(this.toggle != true){
-            $o = new Boolean(false);
-        }
-    }
-    || INV {
-        if(this.toggle != true){
-            $o = new Integer(Integer.parseInt($INV.text));
-        }
-    }
-    || DBV {
-        if(this.toggle != true){
-            $o = new Double(Double.parseDouble($DBV.text));
-        }
-    }
-    || string {
-        if(this.toggle != true){
-            $o = new String($string.s);
-        }
-    }
-    || sqrt {
-        if(this.toggle != true){
-            $o = new Double($sqrt.d);
-        }
-    }
-    || sine {
-        if(this.toggle != true){
-            $o = new Double($sine.d);
-        }
-    }
-    || cosine {
-        if(this.toggle != true){
-            $o = new Double($cosine.d);
-        }
-    }
-    || ln {
-        if(this.toggle != true){
-            $o = new Double($ln.d);
-        }
-    }
-    || exp {
-        if(this.toggle != true){
-            $o = new Double($exp.d);
-        }
-    }
+expr:
+    LPA e=expr RPA
+    | BOC el=expr
+    | NOT el=expr
+    || el=expr MUL er=expr
+    | el=expr DIV er=expr
+    | el=expr MOD er=expr
+    | el=expr (BND|AND) er=expr
+    | el=expr (SHL|BSL) er=expr
+    | el=expr (SHR|BSR) er=expr
+    || el=expr (BOR|'!'|OR) er=expr
+    | el=expr XOR er=expr
+    | el=expr ADD er=expr
+    | el=expr SUB er=expr
+    || el=expr EQU er=expr
+    | el=expr NEQ er=expr
+    | el=expr LES er=expr
+    | el=expr LEQ er=expr
+    | el=expr GRT er=expr
+    | el=expr GEQ er=expr
+    || el=expr OR ELS er=expr
+    | el=expr AND THN er=expr
+    || identifier
+    || PI
+    || TRU
+    || FLS
+    || INV
+    || DBV
+    || string
+    || sqrt
+    || sine
+    || cosine
+    || ln
+    || exp
     ;
 
-string returns[String s]:
-    STV{
-        //drop the quotes surrounding the string
-         String st = $STV.text;
-         $s = new String(st.substring(1,st.length()-1));
-    }
+string:
+    STV
     ;
 /**
  *Lexer
