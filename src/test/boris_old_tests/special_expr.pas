@@ -1,6 +1,7 @@
 program SpecialExprTest;
 var
-    val: real;
+    val, another: real;
+    nut: array [0..5] of integer;
 begin
 
    val := 1337;

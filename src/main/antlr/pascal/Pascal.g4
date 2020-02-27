@@ -64,13 +64,13 @@ varList:
     ;
 
 varType:
-        INT
-        | REL
-        | BOL
-        | CHR
-        | STR ('[' INV ']')?
-        | arrayAlloc
-        | identifier
+    INT
+    | REL
+    | BOL
+    | CHR
+    | STR ('[' INV ']')?
+    | arrayAlloc
+    | identifier
     ;
 
 arrayAlloc :
@@ -81,10 +81,12 @@ range:
     low=INV '..' hi=INV
     ;
 
-constDef:
-    varList EQU expr SEM
-    (constDef)?
-;
+constDef: (singleConstDef)+;
+
+singleConstDef:
+	varList EQU expr SEM
+	;
+
 
 /* Logic */
 implementation:
@@ -181,36 +183,36 @@ expr:
     LPA e=expr RPA
     | BOC el=expr
     | NOT el=expr
-    || el=expr MUL er=expr
+    | el=expr MUL er=expr
     | el=expr DIV er=expr
     | el=expr MOD er=expr
     | el=expr (BND|AND) er=expr
     | el=expr (SHL|BSL) er=expr
     | el=expr (SHR|BSR) er=expr
-    || el=expr (BOR|'!'|OR) er=expr
+    | el=expr (BOR|'!'|OR) er=expr
     | el=expr XOR er=expr
     | el=expr ADD er=expr
     | el=expr SUB er=expr
-    || el=expr EQU er=expr
+    | el=expr EQU er=expr
     | el=expr NEQ er=expr
     | el=expr LES er=expr
     | el=expr LEQ er=expr
     | el=expr GRT er=expr
     | el=expr GEQ er=expr
-    || el=expr OR ELS er=expr
+    | el=expr OR ELS er=expr
     | el=expr AND THN er=expr
-    || identifier
-    || PI
-    || TRU
-    || FLS
-    || INV
-    || DBV
-    || string
-    || sqrt
-    || sine
-    || cosine
-    || ln
-    || exp
+    | identifier
+    | PI
+    | TRU
+    | FLS
+    | INV
+    | DBV
+    | string
+    | sqrt
+    | sine
+    | cosine
+    | ln
+    | exp
     ;
 
 string:

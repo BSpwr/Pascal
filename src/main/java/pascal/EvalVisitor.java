@@ -10,14 +10,22 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     Stack<Boolean> branchHistory = new Stack<Boolean>();
 
     Boolean breakCase = false;
-    Object caseSel = Value.VOID;
+    Object caseSel;
 
-    HashMap<String,Object> variables = new HashMap<String,Object>();
-    HashMap<String,Object> constants = new HashMap<String,Object>();
-    HashMap<String,ArrayList<String>> enums = new HashMap<String,ArrayList<String>>();
+    {
+        try {
+            caseSel = Value.VOID.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+    }
 
-    HashMap<String,String> enumVariableType = new HashMap<String,String>();
-    HashMap<String,String> reserved = new HashMap<String,String>();
+    HashMap<String, Value> variables = new HashMap<String, Value>();
+    HashMap<String, Value> constants = new HashMap<String, Value>();
+    HashMap<String, ArrayList<String>> enums = new HashMap<String, ArrayList<String>>();
+
+    HashMap<String, String> enumVariableType = new HashMap<String, String>();
+    HashMap<String, String> reserved = new HashMap<String, String>();
 
     @Override
     public Value visitStart(PascalParser.StartContext ctx) {
@@ -100,10 +108,10 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         Value typeType = this.visit(ctx.typeType());
         enums.put(ident.asString(), typeType.asStringArrayList());
         //print out the variable map
-        if(debug) {
-            for(HashMap.Entry<String, ArrayList<String>> a : enums.entrySet()) {
+        if (debug) {
+            for (HashMap.Entry<String, ArrayList<String>> a : enums.entrySet()) {
                 System.out.println("\tType:" + a.getKey());
-                for(String s : a.getValue()) {
+                for (String s : a.getValue()) {
                     System.out.println("\tValue:" + s);
                 }
             }
@@ -130,29 +138,30 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         Value varType = this.visit(ctx.varType());
         Value varList = this.visit(ctx.varList());
 
-        if(varType.isString() && !varType.toString().isEmpty()) {
-            enumVariableType.putAll(IntStream.range(0, varList.asStringArrayList().size())
+        ArrayList<String> varNames = varList.asStringArrayList();
+
+        if (varType.isString() && !varType.toString().isEmpty()) {
+            enumVariableType.putAll(IntStream.range(0, varNames.size())
                     .collect(HashMap::new,
-                            (map, i) -> map.put(varList.asStringArrayList().get(i), varType.asString()),
+                            (map, i) -> map.put(varNames.get(i), varType.asString()),
                             Map::putAll));
-            reserved.putAll(IntStream.range(0, varList.asStringArrayList().size())
+            reserved.putAll(IntStream.range(0, varNames.size())
                     .collect(HashMap::new,
-                            (map, i) -> map.put(varList.asStringArrayList().get(i), varType.asString()),
+                            (map, i) -> map.put(varNames.get(i), varType.asString()),
                             Map::putAll));
-        }
-        else{
-            variables.putAll(IntStream.range(0, varList.asStringArrayList().size())
+        } else {
+            variables.putAll(IntStream.range(0, varNames.size())
                     .collect(HashMap::new,
-                            (map, i) -> map.put(varList.asStringArrayList().get(i), varList.asStringArrayList()),
+                            (map, i) -> map.put(varNames.get(i), varType),
                             Map::putAll));
         }
         // print out the variable map
-        if(debug) {
+        if (debug) {
             System.out.println("VARs defined:");
-            ArrayList<String> varNames = varList.asStringArrayList();
+
             for (int i = 0; i < varNames.size(); i++) {
                 System.out.println("\tIdentifier:" + varNames.get(i));
-                System.out.println("\tValue:" + this.variables.get(varNames.get(i)));
+                System.out.println("\tValue:" + variables.get(varNames.get(i)));
             }
         }
         visitChildren(ctx);
@@ -176,35 +185,108 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         String text = ctx.getText().toLowerCase();
         switch (text) {
             case "integer":
-                return Value.INTEGER;
+                try {
+                    return Value.INTEGER.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
             case "real":
-                return Value.REAL;
+                try {
+                    return Value.REAL.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
             case "boolean":
-                return Value.BOOLEAN;
+                try {
+                    return Value.BOOLEAN.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
             case "character":
-                return Value.CHARACTER;
+                try {
+                    return Value.CHARACTER.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
             case "string":
-                return Value.STRING;
+                try {
+                    return Value.STRING.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
         }
-        // TODO: Deal with arrayAlloc and identifier
+
+        if (ctx.arrayAlloc() != null) {
+            Value arrayAlloc = this.visit(ctx.arrayAlloc());
+            return arrayAlloc;
+        } else if (ctx.identifier() != null) {
+            Value ident = this.visit(ctx.identifier());
+            return ident;
+        }
+
         visitChildren(ctx);
         return Value.VOID;
     }
 
     @Override
     public Value visitArrayAlloc(PascalParser.ArrayAllocContext ctx) {
+        Value range = this.visit(ctx.range());
+        Value varType = this.visit(ctx.varType());
+
+        Integer length = (Integer) range.asIntegerArrayList().get(1) - range.asIntegerArrayList().get(0);
+        ArrayList<Object> ret = new ArrayList<Object>(length + 1);
+
+        for (int i = 0; i <= length; i++) {
+            try {
+                ret.add(varType.clone());
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        }
+
         visitChildren(ctx);
-        return Value.VOID;
+        return new Value(ret);
     }
 
     @Override
     public Value visitRange(PascalParser.RangeContext ctx) {
+        Integer low = Integer.parseInt(ctx.low.getText());
+        Integer high = Integer.parseInt(ctx.hi.getText());
+        ArrayList<Integer> ret = new ArrayList<Integer>() {{
+            add(low);
+            add(high);
+        }};
+        visitChildren(ctx);
+        return new Value(ret);
+    }
+
+    @Override
+    public Value visitConstDef(PascalParser.ConstDefContext ctx) {
         visitChildren(ctx);
         return Value.VOID;
     }
 
     @Override
-    public Value visitConstDef(PascalParser.ConstDefContext ctx) {
+    public Value visitSingleConstDef(PascalParser.SingleConstDefContext ctx) {
+
+        Value varList = this.visit(ctx.varList());
+        ArrayList<String> varNames = varList.asStringArrayList();
+
+        Value expr = this.visit(ctx.expr());
+
+        constants.putAll(IntStream.range(0, varNames.size())
+                .collect(HashMap::new,
+                        (map, i) -> map.put(varNames.get(i), expr),
+                        Map::putAll));
+
+        if (debug) {
+            System.out.println("CONSTs defined:");
+            for (int i = 0; i < varNames.size(); i++) {
+                System.out.println("\tIdentifier:" + varNames.get(i));
+                System.out.println("\tValue:" + this.constants.get(varNames.get(i)));
+            }
+        }
+
         visitChildren(ctx);
         return Value.VOID;
     }
@@ -325,8 +407,10 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitString(PascalParser.StringContext ctx) {
+        //drop the quotes surrounding the string
+        String ret = ctx.getText().substring(1, ctx.getText().length() - 1);
         visitChildren(ctx);
-        return Value.VOID;
+        return new Value(ret);
     }
 
 }

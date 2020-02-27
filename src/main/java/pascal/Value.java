@@ -2,7 +2,7 @@ package pascal;
 
 import java.util.ArrayList;
 
-public class Value {
+public class Value implements Cloneable {
 
     public static Value VOID = new Value(new Object());
 
@@ -13,6 +13,11 @@ public class Value {
     public static Value STRING = new Value("\0");
 
     public final Object value;
+
+    @Override
+    public Value clone() throws CloneNotSupportedException {
+            return new Value(super.clone());
+    }
 
     public Value(Object value) {
         if (value == null)
@@ -40,21 +45,27 @@ public class Value {
         return String.valueOf(value);
     }
 
+    @SuppressWarnings("unchecked")
     public ArrayList<Object> asObjectArrayList() {
         return (ArrayList<Object>)value;
     }
+    @SuppressWarnings("unchecked")
     public ArrayList<Boolean> asBooleanArrayList() {
         return (ArrayList<Boolean>)value;
     }
+    @SuppressWarnings("unchecked")
     public ArrayList<Character> asCharacterArrayList() {
         return (ArrayList<Character>)value;
     }
+    @SuppressWarnings("unchecked")
     public ArrayList<Integer> asIntegerArrayList() {
         return (ArrayList<Integer>)value;
     }
+    @SuppressWarnings("unchecked")
     public ArrayList<Double> asDoubleArrayList() {
         return (ArrayList<Double>)value;
     }
+    @SuppressWarnings("unchecked")
     public ArrayList<String> asStringArrayList() {
         return (ArrayList<String>)value;
     }
@@ -115,7 +126,7 @@ public class Value {
     }
     public boolean isStringArrayList() {
         if (!(value instanceof ArrayList)) return false;
-        ArrayList<?> lst = (ArrayList<?>)value;
+        ArrayList<?> lst = (ArrayList<?>) value;
         if (lst.size() == 0) return true;
         if (lst.get(0) instanceof String)
             return true;
