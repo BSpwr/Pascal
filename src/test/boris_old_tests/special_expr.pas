@@ -1,10 +1,14 @@
 program SpecialExprTest;
 var
-    val, another: real;
-    nut: array [0..5] of integer;
+    val, another: integer;
+    // nut: array [0..5] of integer;
 begin
 
    val := 1337;
+
+   if (true) then
+   begin end
+   else
 
     writeln(sqrt(val));
     writeln(sin(val));

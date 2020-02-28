@@ -81,19 +81,19 @@ range:
     low=INV '..' hi=INV
     ;
 
-constDef: (singleConstDef)+;
-
-singleConstDef:
-	varList EQU expr SEM
-	;
-
+constDef: varList EQU expr SEM (constDef)?
+    ;
 
 /* Logic */
 implementation:
     branch
     | cases
     | singleStatement SEM
+    | blockStatement
     ;
+
+
+blockStatement: BGN (implementation)* END;
 
 singleStatement:
     assignment
@@ -105,7 +105,7 @@ singleStatement:
 branch:
     IF expr
     THN
-    ((BGN (implementation)* END)|singleStatement) (SEM| elseCase)
+    implementation (SEM| elseCase)
     ;
 
 cases:
@@ -120,11 +120,11 @@ caseList:
 caseStatement:
     (expr
     |range)
-    COL ((((BGN(implementation)*END SEM)|(singleStatement SEM)))|SEM)
+    COL (implementation|SEM)
     ;
 
 elseCase:
-    ELS (((BGN(implementation)*END SEM)|(singleStatement SEM)))
+    ELS (( SEM)|(singleStatement SEM))
     ;
 
 assignment:
@@ -134,8 +134,8 @@ assignment:
 /* Arguments */
 
 args:
-    v=expr
-    (COM args)?
+    expr
+    | (COM args)?
     ;
 
 /* Print Statements */
@@ -180,39 +180,39 @@ cosine:
 
 /* Arithmetic */
 expr:
-    LPA e=expr RPA
-    | BOC el=expr
-    | NOT el=expr
-    | el=expr MUL er=expr
-    | el=expr DIV er=expr
-    | el=expr MOD er=expr
-    | el=expr (BND|AND) er=expr
-    | el=expr (SHL|BSL) er=expr
-    | el=expr (SHR|BSR) er=expr
-    | el=expr (BOR|'!'|OR) er=expr
-    | el=expr XOR er=expr
-    | el=expr ADD er=expr
-    | el=expr SUB er=expr
-    | el=expr EQU er=expr
-    | el=expr NEQ er=expr
-    | el=expr LES er=expr
-    | el=expr LEQ er=expr
-    | el=expr GRT er=expr
-    | el=expr GEQ er=expr
-    | el=expr OR ELS er=expr
-    | el=expr AND THN er=expr
-    | identifier
-    | PI
-    | TRU
-    | FLS
-    | INV
-    | DBV
-    | string
-    | sqrt
-    | sine
-    | cosine
-    | ln
-    | exp
+    LPA expr RPA #parenExpr
+    | BOC expr #bitwiseNotExpr
+    | NOT expr #notExpr
+    | el=expr MUL er=expr #mulExpr
+    | el=expr DIV er=expr #divExpr
+    | el=expr MOD er=expr #modExpr
+    | el=expr (BND|AND) er=expr #andExpr
+    | el=expr (SHL|BSL) er=expr #bitwiseShiftLeftExpr
+    | el=expr (SHR|BSR) er=expr #bitwiseShiftRightExpr
+    | el=expr (BOR|'!'|OR) er=expr #orExpr
+    | el=expr XOR er=expr #bitwiseXorExpr
+    | el=expr ADD er=expr #addExpr
+    | el=expr SUB er=expr #subExpr
+    | el=expr EQU er=expr #equExpr
+    | el=expr NEQ er=expr #notEquExpr
+    | el=expr LES er=expr #lesExpr
+    | el=expr LEQ er=expr #leqExpr
+    | el=expr GRT er=expr #grtExpr
+    | el=expr GEQ er=expr #geqExpr
+    | el=expr OR ELS er=expr #orElseExpr
+    | el=expr AND THN er=expr #andThenExpr
+    | identifier #identifierExpr
+    | PI #piLiteralExpr
+    | TRU #trueLiteralExpr
+    | FLS #falseLiteralExpr
+    | INV #integerLiteralExpr
+    | DBV #doubleLiteralExpr
+    | string #stringExpr
+    | sqrt #sqrtExpr
+    | sine #sineExpr
+    | cosine #cosineExpr
+    | ln #lnExpr
+    | exp #expExpr
     ;
 
 string:

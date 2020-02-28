@@ -1,5 +1,10 @@
 package pascal;
 
+import org.graalvm.compiler.debug.CSVUtil;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -9,16 +14,9 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     Stack<Boolean> branchHistory = new Stack<Boolean>();
 
+    Boolean toggle = false;
     Boolean breakCase = false;
-    Object caseSel;
-
-    {
-        try {
-            caseSel = Value.VOID.clone();
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        }
-    }
+    Value caseSel = Value.VOID;
 
     HashMap<String, Value> variables = new HashMap<String, Value>();
     HashMap<String, Value> constants = new HashMap<String, Value>();
@@ -27,9 +25,71 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     HashMap<String, String> enumVariableType = new HashMap<String, String>();
     HashMap<String, String> reserved = new HashMap<String, String>();
 
+    // util
+
+    public void throwE(String msg) {
+        System.out.println(msg);
+        System.exit(1);
+    }
+
+    public void setVariable(String key, Value val) {
+        if (variables.containsKey(key)) {
+            Value v = val;
+            Value k = getVariable(key);
+            if (v.equalType(k)) {
+                variables.replace(key, v);
+            } else
+                this.throwE("Unmatched types");
+        } else if (reserved.containsKey(key)) {
+            boolean isValid = false;
+            ArrayList<String> arr = enums.get(this.enumVariableType.get(key));
+            for (String s : arr) {
+                if (val.isString() && val.asString().equals(s)) {
+                    isValid = true;
+                    break;
+                }
+            }
+            if (isValid) {
+                this.reserved.replace(key, val.asString());
+            } else {
+                this.throwE("Attempted to assign an enum of a different or undefined type.");
+            }
+        } else if (this.constants.containsKey(key)) {
+            this.throwE("Attempted to assign to a constant.");
+        } else {
+            this.throwE("Undefined symbol.");
+        }
+    }
+
+    public Value getVariable(String key) {
+        if (this.variables.containsKey(key)) {
+            return this.variables.get(key);
+        } else if (this.constants.containsKey(key)) {
+            return this.constants.get(key);
+        } else if (this.reserved.containsKey(key)) {
+            return new Value(reserved.get(key));
+        } else {
+            if (debug) {
+                System.out.println("Checking if the identifier is an enum.");
+            }
+
+            for (HashMap.Entry<String, ArrayList<String>> a : enums.entrySet()) {
+                for (String s : a.getValue()) {
+                    if (s.equals((String) key)) {
+                        return new Value(key);
+                    }
+                }
+            }
+
+            this.throwE("Undefined symbol.");
+            return Value.VOID;
+        }
+    }
+
+    // visitor start
+
     @Override
     public Value visitStart(PascalParser.StartContext ctx) {
-        System.out.println("Hello pancake!");
         visitChildren(ctx);
         return Value.VOID;
     }
@@ -164,7 +224,10 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
                 System.out.println("\tValue:" + variables.get(varNames.get(i)));
             }
         }
-        visitChildren(ctx);
+
+        if (ctx.varDef() != null)
+            this.visit(ctx.varDef());
+
         return Value.VOID;
     }
 
@@ -185,35 +248,15 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         String text = ctx.getText().toLowerCase();
         switch (text) {
             case "integer":
-                try {
-                    return Value.INTEGER.clone();
-                } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
-                }
+                return Value.INTEGER;
             case "real":
-                try {
-                    return Value.REAL.clone();
-                } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
-                }
+                return Value.REAL;
             case "boolean":
-                try {
-                    return Value.BOOLEAN.clone();
-                } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
-                }
+                return Value.BOOLEAN;
             case "character":
-                try {
-                    return Value.CHARACTER.clone();
-                } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
-                }
+                return Value.CHARACTER;
             case "string":
-                try {
-                    return Value.STRING.clone();
-                } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
-                }
+                return Value.STRING;
         }
 
         if (ctx.arrayAlloc() != null) {
@@ -237,14 +280,9 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         ArrayList<Object> ret = new ArrayList<Object>(length + 1);
 
         for (int i = 0; i <= length; i++) {
-            try {
-                ret.add(varType.clone());
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-            }
+            ret.add(varType);
         }
 
-        visitChildren(ctx);
         return new Value(ret);
     }
 
@@ -256,18 +294,11 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             add(low);
             add(high);
         }};
-        visitChildren(ctx);
         return new Value(ret);
     }
 
     @Override
     public Value visitConstDef(PascalParser.ConstDefContext ctx) {
-        visitChildren(ctx);
-        return Value.VOID;
-    }
-
-    @Override
-    public Value visitSingleConstDef(PascalParser.SingleConstDefContext ctx) {
 
         Value varList = this.visit(ctx.varList());
         ArrayList<String> varNames = varList.asStringArrayList();
@@ -287,12 +318,20 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             }
         }
 
-        visitChildren(ctx);
+        if (ctx.constDef() != null)
+            this.visit(ctx.constDef());
+
         return Value.VOID;
     }
 
     @Override
     public Value visitImplementation(PascalParser.ImplementationContext ctx) {
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitBlockStatement(PascalParser.BlockStatementContext ctx) {
         visitChildren(ctx);
         return Value.VOID;
     }
@@ -305,6 +344,13 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitBranch(PascalParser.BranchContext ctx) {
+//        Value expr = this.visit(ctx.expr());
+//
+//        // if condition true
+//        if (true) {
+//            this.visit(ctx.implementation());
+//        }
+
         visitChildren(ctx);
         return Value.VOID;
     }
@@ -335,14 +381,33 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitAssignment(PascalParser.AssignmentContext ctx) {
+        // System.out.println(ctx.getText());
+
+        Value ident = this.visit(ctx.identifier());
+        Value expr = this.visit(ctx.expr());
+
+        setVariable(ident.asString(), expr);
+
         visitChildren(ctx);
         return Value.VOID;
     }
 
     @Override
     public Value visitArgs(PascalParser.ArgsContext ctx) {
-        visitChildren(ctx);
-        return Value.VOID;
+
+        ArrayList<Value> args = new ArrayList<Value>();
+
+        if (ctx.expr() != null) {
+            // System.out.println(this.visit(ctx.expr()).isVoid());
+            args.add(this.visit(ctx.expr()));
+        }
+
+        if (ctx.args() != null) {
+            args.addAll(this.visit(ctx.args()).asValueArrayList());
+        }
+
+        // System.out.println(args);
+        return new Value(args);
     }
 
     @Override
@@ -353,7 +418,33 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitWritelnFunc(PascalParser.WritelnFuncContext ctx) {
-        visitChildren(ctx);
+        {
+            BufferedWriter foutput = new BufferedWriter(new OutputStreamWriter(System.out));
+
+            Value args = this.visit(ctx.args());
+
+            for (Value arg : args.asValueArrayList()) {
+
+                boolean isPrintableType = arg.isInteger() || arg.isDouble() || arg.isBoolean() || arg.isCharacter() || arg.isString();
+
+                if (isPrintableType) {
+                    try {
+                        foutput.write(arg.asObject().toString());
+                    } catch (IOException e) {
+                        System.out.println(e + "Could not write String to buffer!");
+                    }
+                } else {
+                    Util.throwE("Illegal Operation: arg is not a compatible value!");
+                }
+            }
+            try {
+                foutput.write("\n");
+                foutput.flush();
+            } catch (IOException e) {
+                System.out.println(e + "Could not flush write buffer!");
+            }
+            ;
+        }
         return Value.VOID;
     }
 
@@ -369,41 +460,430 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         return Value.VOID;
     }
 
+    // MATH START
+
     @Override
     public Value visitSqrt(PascalParser.SqrtContext ctx) {
-        visitChildren(ctx);
-        return Value.VOID;
+        Value expr = this.visit(ctx.expr());
+        return new Value(Math.sqrt(expr.asDouble()));
     }
 
     @Override
     public Value visitLn(PascalParser.LnContext ctx) {
-        visitChildren(ctx);
-        return Value.VOID;
+        Value expr = this.visit(ctx.expr());
+        return new Value(Math.log(expr.asDouble()));
     }
 
     @Override
     public Value visitExp(PascalParser.ExpContext ctx) {
-        visitChildren(ctx);
-        return Value.VOID;
+        Value expr = this.visit(ctx.expr());
+        return new Value(Math.exp(expr.asDouble()));
     }
 
     @Override
     public Value visitSine(PascalParser.SineContext ctx) {
-        visitChildren(ctx);
-        return Value.VOID;
+        Value expr = this.visit(ctx.expr());
+        return new Value(Math.sin(expr.asDouble()));
     }
 
     @Override
     public Value visitCosine(PascalParser.CosineContext ctx) {
+        Value expr = this.visit(ctx.expr());
+        return new Value(Math.cos(expr.asDouble()));
+    }
+
+    // MATH END
+
+    // EXPR START
+
+    @Override
+    public Value visitParenExpr(PascalParser.ParenExprContext ctx) {
+        return this.visit(ctx.expr());
+    }
+
+    @Override
+    public Value visitBitwiseNotExpr(PascalParser.BitwiseNotExprContext ctx) {
+        Value expr = this.visit(ctx.expr());
+
+        if (expr.isInteger()) {
+            return new Value(~expr.asInteger());
+        } else if (expr.isCharacter()) {
+            return new Value(~expr.asCharacter());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitNotExpr(PascalParser.NotExprContext ctx) {
+        Value expr = this.visit(ctx.expr());
+
+        if (expr.isBoolean()) {
+            return new Value(!expr.asBoolean());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitMulExpr(PascalParser.MulExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() * er.asCharacter()));
+        } else if (el.isNonFloatNumber() && er.isNonFloatNumber()) {
+            return new Value(el.asInteger() * er.asInteger());
+        } else if (el.isNonFloatNumber() && er.isDouble()) {
+            return new Value(el.asInteger() * er.asDouble());
+        } else if (el.isDouble() && er.isNonFloatNumber()) {
+            return new Value(el.asDouble() * er.asInteger());
+        } else if (el.isDouble() && er.isDouble()) {
+            return new Value(el.asDouble() * er.asDouble());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitDivExpr(PascalParser.DivExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() / er.asCharacter()));
+        } else if (el.isNonFloatNumber() && er.isNonFloatNumber()) {
+            return new Value(el.asInteger() / er.asInteger());
+        } else if (el.isNonFloatNumber() && er.isDouble()) {
+            return new Value(el.asInteger() / er.asDouble());
+        } else if (el.isDouble() && er.isNonFloatNumber()) {
+            return new Value(el.asDouble() / er.asInteger());
+        } else if (el.isDouble() && er.isDouble()) {
+            return new Value(el.asDouble() / er.asDouble());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitModExpr(PascalParser.ModExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() % er.asCharacter()));
+        } else if (el.isNonFloatNumber() && er.isNonFloatNumber()) {
+            return new Value(el.asInteger() % er.asInteger());
+        } else if (el.isNonFloatNumber() && er.isDouble()) {
+            return new Value(el.asInteger() % er.asDouble());
+        } else if (el.isDouble() && er.isNonFloatNumber()) {
+            return new Value(el.asDouble() % er.asInteger());
+        } else if (el.isDouble() && er.isDouble()) {
+            return new Value(el.asDouble() % er.asDouble());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitAndExpr(PascalParser.AndExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isBoolean() && er.isBoolean()) {
+            return new Value(el.asBoolean() && er.asBoolean());
+        } else if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() & er.asCharacter()));
+        } else if (el.isInteger() && el.isInteger()) {
+            return new Value(el.asInteger() & er.asInteger());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitBitwiseShiftLeftExpr(PascalParser.BitwiseShiftLeftExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() << er.asCharacter()));
+        } else if (el.isInteger() && el.isInteger()) {
+            return new Value(el.asInteger() << er.asInteger());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitBitwiseShiftRightExpr(PascalParser.BitwiseShiftRightExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() >> er.asCharacter()));
+        } else if (el.isInteger() && el.isInteger()) {
+            return new Value(el.asInteger() >> er.asInteger());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitOrExpr(PascalParser.OrExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isBoolean() && er.isBoolean()) {
+            return new Value(el.asBoolean() || er.asBoolean());
+        } else if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() | er.asCharacter()));
+        } else if (el.isInteger() && el.isInteger()) {
+            return new Value(el.asInteger() | er.asInteger());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitBitwiseXorExpr(PascalParser.BitwiseXorExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() ^ er.asCharacter()));
+        } else if (el.isInteger() && el.isInteger()) {
+            return new Value(el.asInteger() ^ er.asInteger());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitAddExpr(PascalParser.AddExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() + er.asCharacter()));
+        } else if (el.isNonFloatNumber() && er.isNonFloatNumber()) {
+            return new Value(el.asInteger() + er.asInteger());
+        } else if (el.isNonFloatNumber() && er.isDouble()) {
+            return new Value(el.asInteger() + er.asDouble());
+        } else if (el.isDouble() && er.isNonFloatNumber()) {
+            return new Value(el.asDouble() + er.asInteger());
+        } else if (el.isDouble() && er.isDouble()) {
+            return new Value(el.asDouble() + er.asDouble());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitSubExpr(PascalParser.SubExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isCharacter() && er.isCharacter()) {
+            return new Value((char) (el.asCharacter() - er.asCharacter()));
+        } else if (el.isNonFloatNumber() && er.isNonFloatNumber()) {
+            return new Value(el.asInteger() - er.asInteger());
+        } else if (el.isNonFloatNumber() && er.isDouble()) {
+            return new Value(el.asInteger() - er.asDouble());
+        } else if (el.isDouble() && er.isNonFloatNumber()) {
+            return new Value(el.asDouble() - er.asInteger());
+        } else if (el.isDouble() && er.isDouble()) {
+            return new Value(el.asDouble() - er.asDouble());
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitEquExpr(PascalParser.EquExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        return new Value(el.equal(er));
+    }
+
+    @Override
+    public Value visitNotEquExpr(PascalParser.NotEquExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        return new Value(!el.equal(er));
+    }
+
+    @Override
+    public Value visitLesExpr(PascalParser.LesExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isNumber() && er.isNumber()) {
+            return new Value(el.asDouble() < er.asDouble());
+        }
+
         visitChildren(ctx);
         return Value.VOID;
     }
 
     @Override
-    public Value visitExpr(PascalParser.ExprContext ctx) {
+    public Value visitLeqExpr(PascalParser.LeqExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isNumber() && er.isNumber()) {
+            return new Value(el.asDouble() <= er.asDouble());
+        }
+
         visitChildren(ctx);
         return Value.VOID;
     }
+
+    @Override
+    public Value visitGrtExpr(PascalParser.GrtExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isNumber() && er.isNumber()) {
+            return new Value(el.asDouble() > er.asDouble());
+        }
+
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitGeqExpr(PascalParser.GeqExprContext ctx) {
+        Value el = this.visit(ctx.el);
+        Value er = this.visit(ctx.er);
+
+        if (el.isNumber() && er.isNumber()) {
+            return new Value(el.asDouble() >= er.asDouble());
+        }
+
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitOrElseExpr(PascalParser.OrElseExprContext ctx) {
+        Value el = this.visit(ctx.el);
+
+        if (el.isBoolean()) {
+            if (!el.asBoolean()) {
+                Value er = this.visit(ctx.er);
+                if (er.isBoolean()) {
+                    return new Value(er.asBoolean());
+                }
+            } else
+                return new Value(true);
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitAndThenExpr(PascalParser.AndThenExprContext ctx) {
+        Value el = this.visit(ctx.el);
+
+        if (el.isBoolean()) {
+            if (el.asBoolean()) {
+                Value er = this.visit(ctx.er);
+                if (er.isBoolean()) {
+                    return new Value(er.asBoolean());
+                }
+            } else
+                return new Value(false);
+        }
+
+        throwE("Illegal Operation: Incompatible Type!");
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitIdentifierExpr(PascalParser.IdentifierExprContext ctx) {
+        Value indent = this.visit(ctx.identifier());
+        return getVariable(indent.asString());
+    }
+
+    @Override
+    public Value visitPiLiteralExpr(PascalParser.PiLiteralExprContext ctx) {
+        return new Value(Math.PI);
+    }
+
+    @Override
+    public Value visitTrueLiteralExpr(PascalParser.TrueLiteralExprContext ctx) {
+        return new Value(true);
+    }
+
+    @Override
+    public Value visitFalseLiteralExpr(PascalParser.FalseLiteralExprContext ctx) {
+        return new Value(false);
+    }
+
+    @Override
+    public Value visitIntegerLiteralExpr(PascalParser.IntegerLiteralExprContext ctx) {
+        return new Value(Integer.parseInt(ctx.getText()));
+    }
+
+    @Override
+    public Value visitDoubleLiteralExpr(PascalParser.DoubleLiteralExprContext ctx) {
+        return new Value(Double.parseDouble(ctx.getText()));
+    }
+
+    @Override
+    public Value visitStringExpr(PascalParser.StringExprContext ctx) {
+        Value string = this.visit(ctx.string());
+        return string;
+    }
+
+
+    @Override
+    public Value visitSqrtExpr(PascalParser.SqrtExprContext ctx) {
+        Value sqrtRet = this.visit(ctx.sqrt());
+        return sqrtRet;
+    }
+
+    @Override
+    public Value visitSineExpr(PascalParser.SineExprContext ctx) {
+        Value sineRet = this.visit(ctx.sine());
+        return sineRet;
+    }
+
+    @Override
+    public Value visitCosineExpr(PascalParser.CosineExprContext ctx) {
+        Value cosineRet = this.visit(ctx.cosine());
+        return cosineRet;
+    }
+
+    @Override
+    public Value visitLnExpr(PascalParser.LnExprContext ctx) {
+        Value lnRet = this.visit(ctx.ln());
+        return lnRet;
+    }
+
+    @Override
+    public Value visitExpExpr(PascalParser.ExpExprContext ctx) {
+        Value expRet = this.visit(ctx.exp());
+        return expRet;
+    }
+
+    // EXPR END
 
     @Override
     public Value visitString(PascalParser.StringContext ctx) {
