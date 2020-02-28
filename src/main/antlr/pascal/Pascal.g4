@@ -114,10 +114,6 @@ branch:
 
 cases:
     CAS expr OF
-    caseList
-    ;
-
-caseList:
     (caseStatement)* (elseCase)? END
     ;
 

@@ -6,6 +6,9 @@ public class Value {
 
     public static Value VOID = new Value(new Object());
 
+    public static Value FALSE = new Value(false);
+    public static Value TRUE = new Value(false);
+
     public static Value BOOLEAN = new Value(false);
     public static Value INTEGER = new Value((int) 0);
     public static Value REAL = new Value((double) 0);
@@ -45,6 +48,7 @@ public class Value {
         return String.valueOf(value);
     }
 
+    // java gods pls forgib
     @SuppressWarnings("unchecked")
     public ArrayList<Object> asObjectArrayList() {
         return (ArrayList<Object>) value;

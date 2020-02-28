@@ -360,14 +360,47 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitCases(PascalParser.CasesContext ctx) {
-        visitChildren(ctx);
+        Value expr = this.visit(ctx.expr());
+
+        List<PascalParser.CaseStatementContext> statements = ctx.caseStatement();
+
+        boolean executed = false;
+        for (PascalParser.CaseStatementContext statement : statements) {
+            if (executed) break;
+            executed = execCase(statement, expr).asBoolean();
+        }
+
+        if (!executed && ctx.elseCase() != null)
+            this.visit(ctx.elseCase());
+
         return Value.VOID;
     }
 
-    @Override
-    public Value visitCaseList(PascalParser.CaseListContext ctx) {
-        visitChildren(ctx);
-        return Value.VOID;
+    // return true if statement matched expr and executed, false otherwise
+    public Value execCase(PascalParser.CaseStatementContext ctx, Value expr) {
+
+        if (ctx.expr() != null) {
+            Value statementExpr = this.visit(ctx.expr());
+            if (expr.equal(statementExpr)) {
+                this.visit(ctx.implementation());
+                return Value.TRUE;
+            } else
+                return Value.FALSE;
+        }
+
+        if (ctx.range() != null) {
+            Value range = this.visit(ctx.expr());
+            // assuming only integer ranges
+            int lo = range.asIntegerArrayList().get(0);
+            int high = range.asIntegerArrayList().get(1);
+            if (expr.asInteger() <= high && expr.asInteger() >= lo) {
+                this.visit(ctx.implementation());
+                return Value.TRUE;
+            } else
+                return Value.FALSE;
+        }
+
+        return Value.FALSE;
     }
 
     @Override
@@ -599,7 +632,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             return new Value(el.asDouble() / er.asDouble());
         }
 
-        throwE("Illegal Operation: Incompatible Type!");
+        throwE("Illegal Operation: Incompatible Type! divExpr");
         return Value.VOID;
     }
 
@@ -652,7 +685,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             return new Value(el.asInteger() << er.asInteger());
         }
 
-        throwE("Illegal Operation: Incompatible Type!");
+        throwE("Illegal Operation: Incompatible Type! bitwiseShiftLeftExpr");
         return Value.VOID;
     }
 
