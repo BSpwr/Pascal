@@ -23,7 +23,7 @@ begin
 
   (*Nested Ifs*)
   writeln('Testing Nested Ifs');
-  if (b <> 1) then
+  if (b <> true) then
   begin
     m:=pepe;
     b:=true;
@@ -31,6 +31,10 @@ begin
     j:=10;
     n:= j*10;
     F:= 30.0;
+
+    readln(F);
+    writeln('write');
+    writeln(F);
 
     (*Functions*)
     writeln('Testing functions');
@@ -76,38 +80,7 @@ begin
         else
             writeln('Letter was not in case!');
     end;
-  end
-  else
-  begin
-
-    (*Readln*)
-    writeln('Testing readln');
-    writeln('Enter a value:');
-    readln(s,b);
-    writeln('My value was: ',s,' and the value of b is ',b);
-    (*This is a comment, this does not affect the code at all!*)
-    if(b = true) then
-        writeln('b was true!');
   end;
-  writeln('Enter a value:');
-  readln(s,b);
-  writeln('My value was: ',s,' and the value of b is ',b);
-  (*This is a comment, this does not affect the code at all!*)
-  if(b = true) then
-      writeln('b was true!');
 
-  (*Enums*)
-  writeln('Testing Enum Equivalence');
-  if(m <> d) then
-      writeln('enum works!');
-
-  (*Comparisons*)
-  writeln('Testing Comparisons');
-  if(i > n) then
-      writeln('i was greater than n')
-  else
-      writeln('i was less than n');
-
-  writeln('All tests completed!');
 end
 .

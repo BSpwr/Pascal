@@ -42,6 +42,6 @@ jar {
 }
 
 task execute(type: Exec) {
-    commandLine 'build/install/Pascal2/bin/Pascal2', 'src/test/boris_old_tests/special_expr.pas'
+    commandLine 'build/install/Pascal2/bin/Pascal2', 'src/test/t1.pas'
     ignoreExitValue true
 }

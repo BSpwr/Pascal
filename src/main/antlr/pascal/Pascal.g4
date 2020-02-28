@@ -14,7 +14,7 @@ debug
    : program;
 
 program
-   : programHeading (ITR)? (programImports)? block DOT EOF;
+   : programHeading (ITR)? (programImports)? blocks DOT EOF;
 
 programHeading: (PRM identifier (LPA identifierList RPA)? SEM)
    | (UNI identifier)
@@ -30,25 +30,27 @@ identifierList
    : identifier (COM identifier)*
    ;
 
-block: (typeLab)?
-       ((varLab (constLab)?)|(constLab (varLab)?))?
-       (progLab)*
+blocks: block SEM blocks | block;
+
+block: typeLab
+        | varLab
+        | constLab
+        | progLab
        ;
 
 /** Program Blocks */
-typeLab: TYP typeDef;
+typeLab: TYP typeDef ;
 
 varLab: VAR varDef;
 
 constLab: CST constDef;
 
-progLab: BGN
-(implementation)* END;
+progLab: BGN statements END;
 
 /** Program Operations */
 
 typeDef:
-    identifier EQU LPA typeType RPA SEM (typeDef)?
+    identifier EQU LPA typeType RPA (SEM typeDef)?
     ;
 
 typeType:
@@ -56,7 +58,7 @@ typeType:
     ;
 
 varDef:
-    varList COL varType SEM (varDef)?
+    varList COL varType (SEM varDef)?
     ;
 
 varList:
@@ -81,31 +83,33 @@ range:
     low=INV '..' hi=INV
     ;
 
-constDef: varList EQU expr SEM (constDef)?
+constDef: varList EQU expr (SEM constDef)?
     ;
 
 /* Logic */
+
+// new
+statements:
+	| implementation SEM statements
+	| implementation
+	;
+
+
+//old
 implementation:
-    branch
-    | cases
-    | singleStatement SEM
-    | blockStatement
-    ;
-
-
-blockStatement: BGN (implementation)* END;
-
-singleStatement:
-    assignment
-    | expr
-    | writeln
-    | readln
-    ;
+	    assignment
+        | expr
+        | writeln
+        | readln
+        | branch
+        | cases
+        | block
+        ;
 
 branch:
     IF expr
     THN
-    implementation (SEM| elseCase)
+    implementation (elseCase)?
     ;
 
 cases:
@@ -114,17 +118,17 @@ cases:
     ;
 
 caseList:
-    (caseStatement)* (elseCase)? END SEM
+    (caseStatement)* (elseCase)? END
     ;
 
 caseStatement:
     (expr
     |range)
-    COL (implementation|SEM)
+    COL implementation SEM
     ;
 
 elseCase:
-    ELS (( SEM)|(singleStatement SEM))
+    ELS implementation SEM
     ;
 
 assignment:
@@ -153,7 +157,7 @@ readln:
     ;
 
 readlnFunc:
-    args
+    typeType
     ;
 
 /* Math */
