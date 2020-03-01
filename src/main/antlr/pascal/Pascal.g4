@@ -88,13 +88,16 @@ constDef: varList EQU expr (SEM constDef)?
 
 /* Logic */
 
-// new
 statements:
-	| implementation SEM statements
-	| implementation
+	| implMaybe SEM statements
+	| implMaybe
 	;
 
-//old
+implMaybe:
+    implementation
+    | SEM
+    ;
+
 implementation:
 	    assignment
         | expr
@@ -103,18 +106,19 @@ implementation:
         | branch
         | cases
         | block
-        | SEM
-        | // nothing
+        | whileLoop
+        | forLoop
+        | repeatUntilLoop
         ;
 
 branch:
     IF expr
     THN
-    implementation (elseBranch)?
+    implMaybe (elseBranch)?
     ;
 
 elseBranch:
-    ELS implementation
+    ELS implMaybe
     ;
 
 cases:
@@ -125,15 +129,29 @@ cases:
 caseStatement:
     (expr
     |range)
-    COL implementation SEM
+    COL (implementation)? SEM
     ;
 
 elseCase:
-    ELS implementation SEM
+    ELS (implementation)? SEM
     ;
 
 assignment:
     identifier COL EQU expr
+    ;
+
+whileLoop:
+    WHL expr DO
+    implMaybe
+    ;
+
+forLoop: FOR identifier COL EQU initial=expr (TO|DOWNTO) target=expr DO
+    implMaybe
+    ;
+
+repeatUntilLoop: RPT
+    statements
+    UTL expr
     ;
 
 /* Arguments */
@@ -308,6 +326,8 @@ FOR: F O R;
 DO: D O;
 RPT: R E P E A T;
 UTL: U N T I L;
+TO: T O;
+DOWNTO : D O W N T O;
 
 //Functions
 FUN: F U N C T I O N;

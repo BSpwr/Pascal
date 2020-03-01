@@ -347,7 +347,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
         if (expr.isBoolean()) {
             if (expr.asBoolean()) {
-                this.visit(ctx.implementation());
+                this.visit(ctx.implMaybe());
             } else {
                 if (ctx.elseBranch() != null) {
                     this.visit(ctx.elseBranch());
@@ -388,7 +388,8 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         if (ctx.expr() != null) {
             Value statementExpr = this.visit(ctx.expr());
             if (expr.equal(statementExpr)) {
-                this.visit(ctx.implementation());
+                if (ctx.implementation() != null)
+                    this.visit(ctx.implementation());
                 return Value.TRUE;
             } else
                 return Value.FALSE;
@@ -400,7 +401,8 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             int lo = range.asIntegerArrayList().get(0);
             int high = range.asIntegerArrayList().get(1);
             if (expr.asInteger() <= high && expr.asInteger() >= lo) {
-                this.visit(ctx.implementation());
+                if (ctx.implementation() != null)
+                    this.visit(ctx.implementation());
                 return Value.TRUE;
             } else
                 return Value.FALSE;
@@ -431,6 +433,53 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         visitChildren(ctx);
         return Value.VOID;
     }
+
+    @Override
+    public Value visitWhileLoop(PascalParser.WhileLoopContext ctx) {
+        Value expr = this.visit(ctx.expr());
+
+        while (expr.asBoolean()) {
+            this.visit(ctx.implMaybe());
+            expr = this.visit(ctx.expr());
+        }
+
+        return Value.VOID;
+    }
+
+    /*
+    It is not allowed to change (i.e. assign a value to) the value of a loop variable inside the loop.
+    The value of the loop variable is undefined after a loop has completed or if a loop is not executed at all.
+    If the loop was terminated prematurely with an exception or a break statement, the loop variable retains the value it had when the loop was exited.
+    */
+    // TODO : Implement above details
+    @Override
+    public Value visitForLoop(PascalParser.ForLoopContext ctx) {
+        Value initial = this.visit(ctx.initial);
+        Value target = this.visit(ctx.target);
+
+        if (ctx.TO() != null) {
+            for (int i = initial.asInteger(); i <= target.asInteger(); i++)
+                this.visit(ctx.implMaybe());
+        } else {
+            for (int i = initial.asInteger(); i < target.asInteger(); i--)
+                this.visit(ctx.implMaybe());
+        }
+
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitRepeatUntilLoop(PascalParser.RepeatUntilLoopContext ctx) {
+        Value expr = this.visit(ctx.expr());
+
+        while (!expr.asBoolean()) {
+            this.visit(ctx.statements());
+            expr = this.visit(ctx.expr());
+        }
+
+        return Value.VOID;
+    }
+
 
     @Override
     public Value visitArgs(PascalParser.ArgsContext ctx) {
@@ -686,7 +735,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         Value er = this.visit(ctx.er);
 
         if (el.isCharacter() && er.isCharacter()) {
-            return new Value((char) (el.asCharacter() << er.asCharacter()));
+            return new Value(el.asCharacter() << er.asCharacter());
         } else if (el.isInteger() && el.isInteger()) {
             return new Value(el.asInteger() << er.asInteger());
         }
@@ -701,7 +750,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         Value er = this.visit(ctx.er);
 
         if (el.isCharacter() && er.isCharacter()) {
-            return new Value((char) (el.asCharacter() >> er.asCharacter()));
+            return new Value(el.asCharacter() >> er.asCharacter());
         } else if (el.isInteger() && el.isInteger()) {
             return new Value(el.asInteger() >> er.asInteger());
         }
