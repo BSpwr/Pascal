@@ -349,12 +349,18 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             if (expr.asBoolean()) {
                 this.visit(ctx.implementation());
             } else {
-                if (ctx.elseCase() != null) {
-                    this.visit(ctx.elseCase());
+                if (ctx.elseBranch() != null) {
+                    this.visit(ctx.elseBranch());
                 }
             }
         }
 
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitElseBranch(PascalParser.ElseBranchContext ctx) {
+        visitChildren(ctx);
         return Value.VOID;
     }
 

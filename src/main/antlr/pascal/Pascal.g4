@@ -94,7 +94,6 @@ statements:
 	| implementation
 	;
 
-
 //old
 implementation:
 	    assignment
@@ -104,12 +103,18 @@ implementation:
         | branch
         | cases
         | block
+        | SEM
+        | // nothing
         ;
 
 branch:
     IF expr
     THN
-    implementation (elseCase)?
+    implementation (elseBranch)?
+    ;
+
+elseBranch:
+    ELS implementation
     ;
 
 cases:
@@ -134,8 +139,7 @@ assignment:
 /* Arguments */
 
 args:
-    expr
-    | (COM args)?
+    expr (COM args)?
     ;
 
 /* Print Statements */
