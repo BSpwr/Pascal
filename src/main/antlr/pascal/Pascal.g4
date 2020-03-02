@@ -128,6 +128,7 @@ implementation
     | whileLoop
     | forLoop
     | repeatUntilLoop
+    | codeExec
     ;
 
 branch
@@ -178,6 +179,10 @@ repeatUntilLoop
     RPT
     statements
     UTL expr
+    ;
+
+codeExec
+    : identifier LPA args RPA
     ;
 
 codeDefs
@@ -281,6 +286,7 @@ expr
     | cosine #cosineExpr
     | ln #lnExpr
     | exp #expExpr
+    | codeExec #codeExpr
     ;
 
 string

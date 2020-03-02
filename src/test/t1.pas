@@ -17,20 +17,33 @@ const colMax = 76;
       cDelay = 20;
       letterA = 'A';
 
-function werk (t, d, g: integer; st: string; n:real): integer;
+function double (t: integer): integer;
 begin
-writeln('werk')
-// return 0;
+writeln(t);
+double := t * 2;
 end;
 
-procedure ree (t, d, g: integer; st: string);
+function triple (g: integer): integer;
+var
+    result: integer;
 begin
-writeln('ree')
+writeln(g);
+result := g * 3;
+end;
+
+procedure ree (bee, d: boolean; st: string);
+begin
+writeln(st);
+writeln(bee, ' and ', d);
 end;
 
 begin
   b:=false;
   d:=cat;
+
+  writeln(double(456));
+  writeln(triple(1234));
+  ree(true, false, 'wow!');
 
   (*Nested Ifs*)
   writeln('Testing Nested Ifs');

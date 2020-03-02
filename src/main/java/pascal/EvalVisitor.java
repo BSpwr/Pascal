@@ -1,10 +1,13 @@
 package pascal;
 
+import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Pair;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -24,6 +27,8 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     HashMap<String, String> enumVariableType = new HashMap<String, String>();
     HashMap<String, String> reserved = new HashMap<String, String>();
+
+    HashMap<String, Function> functionMap = new HashMap<>();
 
     // util
 
@@ -58,7 +63,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         } else if (this.constants.containsKey(key)) {
             this.throwE("Attempted to assign to a constant.");
         } else {
-            this.throwE("Undefined symbol.");
+            this.throwE("Undefined symbol -> " + key + ".");
         }
     }
 
@@ -81,8 +86,9 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
                     }
                 }
             }
-
-            System.out.println("Not an enum!");
+            if (debug) {
+                System.out.println(key + " <-- Not an enum!");
+            }
             return Value.VOID;
         }
     }
@@ -174,7 +180,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
         ArrayList<String> enumTypes = typeType.asStringArrayList();
 
-        System.out.println(typeType.asStringArrayList());
         enums.put(ident.asString(), typeType.asStringArrayList());
         enumVariableType.putAll(IntStream.range(0, enumTypes.size())
                 .collect(HashMap::new,
@@ -219,10 +224,10 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
         // TODO: Should check if varType is enum type or is invalid
         // It's enum type if varType is non empty string
-            variables.putAll(IntStream.range(0, varNames.size())
-                    .collect(HashMap::new,
-                            (map, i) -> map.put(varNames.get(i), varType),
-                            Map::putAll));
+        variables.putAll(IntStream.range(0, varNames.size())
+                .collect(HashMap::new,
+                        (map, i) -> map.put(varNames.get(i), varType),
+                        Map::putAll));
 
         // print out the variable map
         if (debug) {
@@ -481,27 +486,118 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     }
 
     @Override
+    public Value visitCodeExec(PascalParser.CodeExecContext ctx) {
+        Value ident = this.visit(ctx.identifier());
+        Value args = this.visit(ctx.args());
+
+        String name = ident.asString();
+        ArrayList<Value> argsList = args.asValueArrayList();
+
+        Function func = null;
+
+        Value ret = Value.VOID;
+
+        if (functionMap.containsKey(name)) {
+            func = functionMap.get(name);
+        }
+
+        if (func != null) {
+            // Currently is polluting scope
+            // TODO: Proper (Static) Scoping
+            try {
+                for (int i = 0; i < func.argsList.size(); i++) {
+                    if (func.argsList.get(i).b.equalType(argsList.get(i))) {
+                        variables.put(func.argsList.get(i).a, argsList.get(i));
+                    } else throwE("Function -> " + name + " <- called with invalid type.");
+                }
+            }
+            catch (ArrayIndexOutOfBoundsException e) {
+                throwE("Function -> " + name + " <- called with invalid number of args.");
+            }
+
+            // for returns
+            if (!func.returnType.isVoid())
+                variables.put(func.name, func.returnType);
+
+            for (ParserRuleContext funcCtx : func.functionContent) {
+                this.visit(funcCtx);
+            }
+
+            if (!func.returnType.isVoid()) {
+                if (variables.containsKey("result")) {
+                    Value resultRet = getVariable("result");
+                    if (!resultRet.isVoid() && resultRet.equalType(func.returnType)) ret = resultRet;
+                    else throwE("Function -> " + name + " <- returned the incorrect type.");
+                }
+                else {
+                    Value nameRet = getVariable(func.name);
+                    if (!nameRet.isVoid()) ret = nameRet;
+                }
+            }
+        } else throwE("Function -> " + name + " <- is not defined.");
+
+        return ret;
+    }
+
+    @Override
     public Value visitCodeDefs(PascalParser.CodeDefsContext ctx) {
         visitChildren(ctx);
         return Value.VOID;
     }
 
     @Override
+    // Brainstorming what a function needs
+    // need to save a ArrayList<Pair<String,Value>> for argslist
+    // ArrayList<ParserRuleContext> for the decBlock and progBlock saving
+    // Need to know what to return
+    // can either return if value in val decBlock is called return
+    // or if variable with same name as function is assigned to
+    // Note: functions always run until the end
     public Value visitFunctionDef(PascalParser.FunctionDefContext ctx) {
-        visitChildren(ctx);
+        Value ident = this.visit(ctx.identifier());
+        Value argsTypeList = this.visit(ctx.argsTypeList());
+        Value varType = this.visit(ctx.varType());
+        // save the code inside the function into a function table to be used later
+
+        String funcName = ident.asString();
+        ArrayList<Pair<String, Value>> argsList = argsTypeList.asArgsTypeList();
+        ArrayList<ParserRuleContext> functionContent = new ArrayList<>();
+
+        if (ctx.decBlocks() != null)
+            functionContent.add(ctx.decBlocks());
+
+        functionContent.add(ctx.progBlock());
+
+        Function func = new Function(funcName, argsList, functionContent, varType);
+
+        functionMap.put(funcName, func);
         return Value.VOID;
     }
 
     @Override
     public Value visitProcedureDef(PascalParser.ProcedureDefContext ctx) {
-        visitChildren(ctx);
+        Value ident = this.visit(ctx.identifier());
+        Value argsTypeList = this.visit(ctx.argsTypeList());
+        // save the code inside the procedure into a procedure table to be used later
+
+        String procName = ident.asString();
+        ArrayList<Pair<String, Value>> argsList = argsTypeList.asArgsTypeList();
+        ArrayList<ParserRuleContext> procContent = new ArrayList<>();
+
+        if (ctx.decBlocks() != null)
+            procContent.add(ctx.decBlocks());
+
+        procContent.add(ctx.progBlock());
+
+        Function proc = new Function(procName, argsList, procContent);
+
+        functionMap.put(procName, proc);
         return Value.VOID;
     }
 
     @Override
     // returns an arraylist of pairs of arg names to value types
     public Value visitArgsTypeList(PascalParser.ArgsTypeListContext ctx) {
-        System.out.println("aaaa");
         // TODO : This function doesn't check if varType is a valid enum
 
         Value varList = this.visit(ctx.varList());
@@ -509,7 +605,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
         ArrayList<String> varNames = varList.asStringArrayList();
 
-        ArrayList<Pair<String,Value>> ret = new ArrayList<>();
+        ArrayList<Pair<String, Value>> ret = new ArrayList<>();
 
         for (String name : varNames) {
             ret.add(new Pair<>(name, varType));
@@ -521,7 +617,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         // print out the (name, type) pairs
         if (debug) {
             System.out.println("Args,type list content:");
-            for (Pair<String,Value> a : ret) {
+            for (Pair<String, Value> a : ret) {
                 System.out.print(a.toString() + " ");
             }
             System.out.println();
@@ -1052,6 +1148,12 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     public Value visitExpExpr(PascalParser.ExpExprContext ctx) {
         Value expRet = this.visit(ctx.exp());
         return expRet;
+    }
+
+    @Override
+    public Value visitCodeExpr(PascalParser.CodeExprContext ctx) {
+        Value codeRet = this.visit(ctx.codeExec());
+        return codeRet;
     }
 
     // EXPR END
