@@ -1,5 +1,7 @@
 package pascal;
 
+import org.antlr.v4.runtime.misc.Pair;
+
 import java.util.ArrayList;
 
 public class Value {
@@ -9,8 +11,11 @@ public class Value {
     public static Value FALSE = new Value(false);
     public static Value TRUE = new Value(false);
 
+    public static Value CONTINUE = new Value("__PASCAL_INTERPRETER_INTERNAL_CONTINUE_STATEMENT");
+    public static Value BREAK = new Value("__PASCAL_INTERPRETER_INTERNAL_BREAK_STATEMENT");
+
     public static Value BOOLEAN = new Value(false);
-    public static Value INTEGER = new Value((int) 0);
+    public static Value INTEGER = new Value(0);
     public static Value REAL = new Value((double) 0);
     public static Value CHARACTER = new Value('\0');
     public static Value STRING = new Value("\0");
@@ -33,7 +38,7 @@ public class Value {
     }
 
     public Character asCharacter() {
-        return (char) Double.parseDouble(value.toString());
+        return value.toString().charAt(0);
     }
 
     public Integer asInteger() {
@@ -48,7 +53,6 @@ public class Value {
         return String.valueOf(value);
     }
 
-    // java gods pls forgib
     @SuppressWarnings("unchecked")
     public ArrayList<Object> asObjectArrayList() {
         return (ArrayList<Object>) value;
@@ -84,86 +88,86 @@ public class Value {
         return (ArrayList<Value>) value;
     }
 
+    @SuppressWarnings("unchecked")
+    public ArrayList<Pair<String, Value>> asArgsTypeList() {
+        return (ArrayList<Pair<String, Value>>) value;
+    }
+
     public boolean isVoid() {
-        return this.value.equals(VOID.value);
+        return equals(VOID);
     }
 
     public boolean isBoolean() {
-        return value instanceof Boolean;
+        return value.getClass().equals(Boolean.class);
     }
 
     public boolean isCharacter() {
-        return value instanceof Character;
+        return value.getClass().equals(Character.class);
     }
 
     public boolean isInteger() {
-        return value instanceof Integer;
+        return value.getClass().equals(Integer.class);
     }
 
     public boolean isDouble() {
-        return value instanceof Double;
+        return value.getClass().equals(Double.class);
     }
 
     public boolean isString() {
-        return value instanceof String;
+        return value.getClass().equals(String.class);
     }
 
     public boolean isArrayList() {
-        return value instanceof ArrayList;
+        return value.getClass().equals(ArrayList.class);
     }
 
     public boolean isBooleanArrayList() {
-        if (!(value instanceof ArrayList)) return false;
+        if (!isArrayList()) return false;
         ArrayList<?> lst = (ArrayList<?>) value;
         if (lst.size() == 0) return true;
-        if (lst.get(0) instanceof Boolean)
-            return true;
-        else return false;
+        return lst.get(0).getClass().equals(Boolean.class);
     }
 
     public boolean isCharacterArrayList() {
-        if (!(value instanceof ArrayList)) return false;
+        if (!isArrayList()) return false;
         ArrayList<?> lst = (ArrayList<?>) value;
         if (lst.size() == 0) return true;
-        if (lst.get(0) instanceof Character)
-            return true;
-        else return false;
+        return lst.get(0).getClass().equals(Character.class);
     }
 
     public boolean isIntegerArrayList() {
-        if (!(value instanceof ArrayList)) return false;
+        if (!isArrayList()) return false;
         ArrayList<?> lst = (ArrayList<?>) value;
         if (lst.size() == 0) return true;
-        if (lst.get(0) instanceof Integer)
-            return true;
-        else return false;
+        return lst.get(0).getClass().equals(Integer.class);
     }
 
     public boolean isDoubleArrayList() {
-        if (!(value instanceof ArrayList)) return false;
+        if (!isArrayList()) return false;
         ArrayList<?> lst = (ArrayList<?>) value;
         if (lst.size() == 0) return true;
-        if (lst.get(0) instanceof Double)
-            return true;
-        else return false;
+        return lst.get(0).getClass().equals(Double.class);
     }
 
     public boolean isStringArrayList() {
-        if (!(value instanceof ArrayList)) return false;
+        if (!isArrayList()) return false;
         ArrayList<?> lst = (ArrayList<?>) value;
         if (lst.size() == 0) return true;
-        if (lst.get(0) instanceof String)
-            return true;
-        else return false;
+        return lst.get(0).getClass().equals(String.class);
     }
 
     public boolean isValueArrayList() {
-        if (!(value instanceof ArrayList)) return false;
+        if (!isArrayList()) return false;
         ArrayList<?> lst = (ArrayList<?>) value;
         if (lst.size() == 0) return true;
-        if (lst.get(0) instanceof Value)
-            return true;
-        else return false;
+        return lst.get(0).getClass().equals(Value.class);
+    }
+
+    public boolean isPairArrayList() {
+        if (!isArrayList()) return false;
+        ArrayList<?> lst = (ArrayList<?>) value;
+        if (lst.size() == 0) return true;
+        return lst.get(0).getClass().equals(Pair.class);
     }
 
     public boolean isNonFloatNumber() {
@@ -176,88 +180,34 @@ public class Value {
 
     @Override
     public int hashCode() {
-        if (value == null) {
-            return 0;
-        }
         return this.value.hashCode();
     }
 
-    // this hurt to write :)
     public boolean equalType(Value rhs) {
-
-        if (isVoid()) {
-            if (rhs.isVoid()) return true;
-        }
-        if (isBoolean()) {
-            if (rhs.isBoolean()) return true;
-        }
-        if (isCharacter()) {
-            if (rhs.isCharacter()) return true;
-        }
-        if (isDouble()) {
-            if (rhs.isDouble()) return true;
-        }
-        if (isInteger()) {
-            if (rhs.isInteger()) return true;
-        }
-        if (isString()) {
-            if (rhs.isString()) return true;
-        }
-        if (isBooleanArrayList()) {
-            if (rhs.isBooleanArrayList()) return true;
-        }
-        if (isCharacterArrayList()) {
-            if (rhs.isCharacterArrayList()) return true;
-        }
-        if (isIntegerArrayList()) {
-            if (rhs.isIntegerArrayList()) return true;
-        }
-        if (isDoubleArrayList()) {
-            if (rhs.isDoubleArrayList()) return true;
-        }
-        if (isStringArrayList()) {
-            if (rhs.isStringArrayList()) return true;
-        }
-        if (isValueArrayList()) {
-            if (rhs.isValueArrayList()) return true;
-        }
-
-        return false;
-    }
-
-    // somehow this one hurt more
-    public boolean equal(Value rhs) {
-
-        if (isVoid()) {
-            if (rhs.isVoid()) return true;
-        }
-        if (isBoolean()) {
-            if (rhs.isBoolean()) return asBoolean().equals(rhs.asBoolean());
-        }
-        if (isCharacter()) {
-            if (rhs.isCharacter()) return asCharacter().equals(rhs.asCharacter());
-        }
-        if (isDouble()) {
-            if (rhs.isDouble()) return asDouble().equals(rhs.asDouble());
-        }
-        if (isInteger()) {
-            if (rhs.isInteger()) return asInteger().equals(rhs.asInteger());
-        }
-        if (isString()) {
-            if (rhs.isString()) return asString().equals(rhs.asString());
-        }
-
-        // TODO: Ill write it once it's needed
+        if (isVoid())
+            return rhs.isVoid();
         if (isArrayList()) {
-            return equalArrayList(rhs);
+            if (isBooleanArrayList())
+                return rhs.isBooleanArrayList();
+            else if (isCharacterArrayList())
+                return rhs.isCharacterArrayList();
+            else if (isIntegerArrayList())
+                return rhs.isIntegerArrayList();
+            else if (isDoubleArrayList())
+                return rhs.isDoubleArrayList();
+            else if (isStringArrayList())
+                return rhs.isStringArrayList();
+            else if (isValueArrayList())
+                return rhs.isValueArrayList();
+            else if (isPairArrayList())
+                return rhs.isPairArrayList();
         }
 
-        return false;
+        return value.getClass().equals(rhs.value.getClass());
     }
 
-    public boolean equalArrayList(Value rhs) {
-        // TODO: Ill write it once it's needed
-        return false;
+    public boolean equals(Value rhs) {
+        return value.equals(rhs.value);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package pascal;
 
-import org.graalvm.compiler.debug.CSVUtil;
+import org.antlr.v4.runtime.misc.Pair;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -132,13 +132,13 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     }
 
     @Override
-    public Value visitBlocks(PascalParser.BlocksContext ctx) {
+    public Value visitDecBlocks(PascalParser.DecBlocksContext ctx) {
         visitChildren(ctx);
         return Value.VOID;
     }
 
     @Override
-    public Value visitBlock(PascalParser.BlockContext ctx) {
+    public Value visitDecBlock(PascalParser.DecBlockContext ctx) {
         visitChildren(ctx);
         return Value.VOID;
     }
@@ -162,7 +162,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     }
 
     @Override
-    public Value visitProgLab(PascalParser.ProgLabContext ctx) {
+    public Value visitProgBlock(PascalParser.ProgBlockContext ctx) {
         visitChildren(ctx);
         return Value.VOID;
     }
@@ -171,8 +171,19 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     public Value visitTypeDef(PascalParser.TypeDefContext ctx) {
         Value ident = this.visit(ctx.identifier());
         Value typeType = this.visit(ctx.typeType());
+
+        ArrayList<String> enumTypes = typeType.asStringArrayList();
+
         System.out.println(typeType.asStringArrayList());
         enums.put(ident.asString(), typeType.asStringArrayList());
+        enumVariableType.putAll(IntStream.range(0, enumTypes.size())
+                .collect(HashMap::new,
+                        (map, i) -> map.put(enumTypes.get(i), ident.asString()),
+                        Map::putAll));
+        reserved.putAll(IntStream.range(0, enumTypes.size())
+                .collect(HashMap::new,
+                        (map, i) -> map.put(enumTypes.get(i), ident.asString()),
+                        Map::putAll));
         //print out the variable map
         if (debug) {
             for (HashMap.Entry<String, ArrayList<String>> a : enums.entrySet()) {
@@ -206,23 +217,13 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
         ArrayList<String> varNames = varList.asStringArrayList();
 
-        // TODO: Enums need testing
-        if (varType.isStringArrayList()) {
-            System.out.println("nut");
-            enumVariableType.putAll(IntStream.range(0, varNames.size())
-                    .collect(HashMap::new,
-                            (map, i) -> map.put(varNames.get(i), varType.asString()),
-                            Map::putAll));
-            reserved.putAll(IntStream.range(0, varNames.size())
-                    .collect(HashMap::new,
-                            (map, i) -> map.put(varNames.get(i), varType.asString()),
-                            Map::putAll));
-        } else {
+        // TODO: Should check if varType is enum type or is invalid
+        // It's enum type if varType is non empty string
             variables.putAll(IntStream.range(0, varNames.size())
                     .collect(HashMap::new,
                             (map, i) -> map.put(varNames.get(i), varType),
                             Map::putAll));
-        }
+
         // print out the variable map
         if (debug) {
             System.out.println("VARs defined:");
@@ -238,7 +239,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
         return Value.VOID;
     }
-
 
     @Override
     public Value visitVarList(PascalParser.VarListContext ctx) {
@@ -387,7 +387,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
         if (ctx.expr() != null) {
             Value statementExpr = this.visit(ctx.expr());
-            if (expr.equal(statementExpr)) {
+            if (expr.equals(statementExpr)) {
                 if (ctx.implementation() != null)
                     this.visit(ctx.implementation());
                 return Value.TRUE;
@@ -480,6 +480,56 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         return Value.VOID;
     }
 
+    @Override
+    public Value visitCodeDefs(PascalParser.CodeDefsContext ctx) {
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitFunctionDef(PascalParser.FunctionDefContext ctx) {
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitProcedureDef(PascalParser.ProcedureDefContext ctx) {
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
+    // returns an arraylist of pairs of arg names to value types
+    public Value visitArgsTypeList(PascalParser.ArgsTypeListContext ctx) {
+        System.out.println("aaaa");
+        // TODO : This function doesn't check if varType is a valid enum
+
+        Value varList = this.visit(ctx.varList());
+        Value varType = this.visit(ctx.varType());
+
+        ArrayList<String> varNames = varList.asStringArrayList();
+
+        ArrayList<Pair<String,Value>> ret = new ArrayList<>();
+
+        for (String name : varNames) {
+            ret.add(new Pair<>(name, varType));
+        }
+
+        if (ctx.argsTypeList() != null)
+            ret.addAll(this.visit(ctx.argsTypeList()).asArgsTypeList());
+
+        // print out the (name, type) pairs
+        if (debug) {
+            System.out.println("Args,type list content:");
+            for (Pair<String,Value> a : ret) {
+                System.out.print(a.toString() + " ");
+            }
+            System.out.println();
+        }
+
+        return new Value(ret);
+    }
+
 
     @Override
     public Value visitArgs(PascalParser.ArgsContext ctx) {
@@ -494,7 +544,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             args.addAll(this.visit(ctx.args()).asValueArrayList());
         }
 
-        // System.out.println(args);
         return new Value(args);
     }
 
@@ -838,7 +887,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         Value el = this.visit(ctx.el);
         Value er = this.visit(ctx.er);
 
-        return new Value(el.equal(er));
+        return new Value(el.equals(er));
     }
 
     @Override
@@ -846,7 +895,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         Value el = this.visit(ctx.el);
         Value er = this.visit(ctx.er);
 
-        return new Value(!el.equal(er));
+        return new Value(!el.equals(er));
     }
 
     @Override

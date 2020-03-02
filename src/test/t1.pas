@@ -17,6 +17,17 @@ const colMax = 76;
       cDelay = 20;
       letterA = 'A';
 
+function werk (t, d, g: integer; st: string; n:real): integer;
+begin
+writeln('werk')
+// return 0;
+end;
+
+procedure ree (t, d, g: integer; st: string);
+begin
+writeln('ree')
+end;
+
 begin
   b:=false;
   d:=cat;
@@ -71,7 +82,7 @@ begin
     end;
     writeln('Case 3: ');
     case letterA of
-        'C': writeln('Letter was C');
+        'C': writeln('Letter was B');
         'B': writeln('Letter was B');
         else
             writeln('Letter was not in case!');
@@ -81,17 +92,17 @@ begin
   begin
 
     (*Readln*)
-    writeln('Testing readln');
-    writeln('Enter a value:');
-    readln(s,b);
-    writeln('My value was: ',s,' and the value of b is ',b);
+  //  writeln('Testing readln');
+   // writeln('Enter a value:');
+   // readln(s,b);
+  //  writeln('My value was: ',s,' and the value of b is ',b);
     (*This is a comment, this does not affect the code at all!*)
-    if(b = true) then
-        writeln('b was true!');
+  //  if(b = true) then
+   //     writeln('b was true!');
   end;
-  writeln('Enter a value:');
-  readln(s,b);
-  writeln('My value was: ',s,' and the value of b is ',b);
+ // writeln('Enter a value:');
+ // readln(s,b);
+//  writeln('My value was: ',s,' and the value of b is ',b);
   (*This is a comment, this does not affect the code at all!*)
   if(b = true) then
       writeln('b was true!');

@@ -8,65 +8,84 @@ grammar Pascal;
  * Parser
  */
 
-start : debug;
+start
+    : debug
+    ;
 
 debug
-   : program;
+    : program
+    ;
 
 program
-   : programHeading (ITR)? (programImports)? blocks DOT EOF;
+    : programHeading (ITR)? (programImports)? (decBlocks SEM)? (codeDefs SEM)? progBlock DOT EOF
+    ;
 
-programHeading: (PRM identifier (LPA identifierList RPA)? SEM)
-   | (UNI identifier)
-;
+programHeading
+    : (PRM identifier (LPA identifierList RPA)? SEM)
+    | (UNI identifier)
+    ;
 
 programImports
-   : USE identifier SEM
-   ;
+    : USE identifier SEM
+    ;
 
-identifier: IDE;
+identifier
+    : IDE
+    ;
 
 identifierList
-   : identifier (COM identifier)*
-   ;
+    : identifier (COM identifier)*
+    ;
 
-blocks: block SEM blocks | block;
+decBlocks
+    : decBlock SEM decBlocks
+    | decBlock
+    ;
 
-block: typeLab
-        | varLab
-        | constLab
-        | progLab
-       ;
+decBlock
+    : typeLab
+    | varLab
+    | constLab
+    ;
 
-/** Program Blocks */
-typeLab: TYP typeDef ;
+/** Declaration Blocks */
+typeLab
+    : TYP typeDef
+    ;
 
-varLab: VAR varDef;
+varLab
+    : VAR varDef
+    ;
 
-constLab: CST constDef;
+constLab
+    : CST constDef
+    ;
 
-progLab: BGN statements END;
+/** Code Block **/
+progBlock
+    : BGN statements END
+    ;
 
 /** Program Operations */
 
-typeDef:
-    identifier EQU LPA typeType RPA (SEM typeDef)?
+typeDef
+    : identifier EQU LPA typeType RPA (SEM typeDef)?
     ;
 
-typeType:
-    identifier (COM typeType)?
+typeType
+    : identifier (COM typeType)?
     ;
 
-varDef:
-    varList COL varType (SEM varDef)?
+varDef
+    : varList COL varType (SEM varDef)?
     ;
 
-varList:
-    identifier (COM varList)?
+varList
+    : identifier (COM varList)?
     ;
 
-varType:
-    INT
+varType
+    : INT
     | REL
     | BOL
     | CHR
@@ -75,134 +94,161 @@ varType:
     | identifier
     ;
 
-arrayAlloc :
-    ARR '[' range ']' OF varType
+arrayAlloc
+    : ARR '[' range ']' OF varType
     ;
 
-range:
-    low=INV '..' hi=INV
+range
+    : low=INV '..' hi=INV
     ;
 
-constDef: varList EQU expr (SEM constDef)?
+constDef
+    : varList EQU expr (SEM constDef)?
     ;
 
 /* Logic */
 
-statements:
-	| implMaybe SEM statements
+statements
+	: implMaybe SEM statements
 	| implMaybe
 	;
 
-implMaybe:
-    implementation
-    | SEM
+implMaybe
+    : (implementation|SEM)?
     ;
 
-implementation:
-	    assignment
-        | expr
-        | writeln
-        | readln
-        | branch
-        | cases
-        | block
-        | whileLoop
-        | forLoop
-        | repeatUntilLoop
-        ;
+implementation
+    : assignment
+    | expr
+    | writeln
+    | readln
+    | branch
+    | cases
+    | progBlock
+    | whileLoop
+    | forLoop
+    | repeatUntilLoop
+    ;
 
-branch:
+branch
+    :
     IF expr
     THN
     implMaybe (elseBranch)?
     ;
 
-elseBranch:
-    ELS implMaybe
+elseBranch
+    : ELS implMaybe
     ;
 
-cases:
+cases
+    :
     CAS expr OF
     (caseStatement)* (elseCase)? END
     ;
 
-caseStatement:
-    (expr
-    |range)
+caseStatement
+    :
+    (expr |range)
     COL (implementation)? SEM
     ;
 
-elseCase:
-    ELS (implementation)? SEM
+elseCase
+    : ELS (implementation)? SEM
     ;
 
-assignment:
-    identifier COL EQU expr
+assignment
+    : identifier COL EQU expr
     ;
 
-whileLoop:
+whileLoop
+    :
     WHL expr DO
     implMaybe
     ;
 
-forLoop: FOR identifier COL EQU initial=expr (TO|DOWNTO) target=expr DO
+forLoop
+    :
+    FOR identifier COL EQU initial=expr (TO|DOWNTO) target=expr DO
     implMaybe
     ;
 
-repeatUntilLoop: RPT
+repeatUntilLoop
+    :
+    RPT
     statements
     UTL expr
     ;
 
+codeDefs
+    : (functionDef | procedureDef) (SEM codeDefs)?
+    ;
+
+functionDef
+    :
+    FUN identifier LPA argsTypeList RPA COL varType SEM
+    (decBlocks SEM)? progBlock
+    ;
+
+procedureDef
+    :
+    PRO identifier LPA argsTypeList RPA SEM
+    (decBlocks SEM)? progBlock
+    ;
+
+argsTypeList
+    : varList COL varType (SEM argsTypeList)?
+    ;
+
 /* Arguments */
 
-args:
-    expr (COM args)?
+args
+    : expr (COM args)?
     ;
 
 /* Print Statements */
 
-writeln:
-    WRL LPA writelnFunc RPA
+writeln
+    : WRL LPA writelnFunc RPA
     ;
 
-writelnFunc:
-    args
+writelnFunc
+    : args
     ;
 
-readln:
-    RDL LPA readlnFunc RPA
+readln
+    : RDL LPA readlnFunc RPA
     ;
 
-readlnFunc:
-    typeType
+readlnFunc
+    : typeType
     ;
 
 /* Math */
 
-sqrt:
-    SQR LPA expr RPA
+sqrt
+    : SQR LPA expr RPA
     ;
 
-ln:
-    LN LPA expr RPA
+ln
+    : LN LPA expr RPA
     ;
 
-exp:
-    EXP LPA expr RPA
+exp
+    : EXP LPA expr RPA
     ;
 
-sine:
-    SIN LPA expr RPA
+sine
+    : SIN LPA expr RPA
     ;
 
-cosine:
-    COS LPA expr RPA
+cosine
+    : COS LPA expr RPA
     ;
 
 /* Arithmetic */
-expr:
-    LPA expr RPA #parenExpr
+expr
+    : LPA expr RPA #parenExpr
     | BOC expr #bitwiseNotExpr
     | NOT expr #notExpr
     | el=expr MUL er=expr #mulExpr
@@ -237,8 +283,8 @@ expr:
     | exp #expExpr
     ;
 
-string:
-    STV
+string
+    : STV
     ;
 /**
  *Lexer
@@ -331,7 +377,7 @@ DOWNTO : D O W N T O;
 
 //Functions
 FUN: F U N C T I O N;
-PRO: P R O C E D U R E S;
+PRO: P R O C E D U R E;
 ITR: I N T E R F A C E;
 
 //Arithmetic Operators
