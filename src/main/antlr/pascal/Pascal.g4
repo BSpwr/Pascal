@@ -129,6 +129,8 @@ implementation
     | forLoop
     | repeatUntilLoop
     | codeExec
+    | BRK
+    | CONT
     ;
 
 branch
@@ -182,7 +184,7 @@ repeatUntilLoop
     ;
 
 codeExec
-    : identifier LPA args RPA
+    : identifier LPA (args)? RPA
     ;
 
 codeDefs
@@ -191,13 +193,13 @@ codeDefs
 
 functionDef
     :
-    FUN identifier LPA argsTypeList RPA COL varType SEM
+    FUN identifier LPA (argsTypeList)? RPA COL varType SEM
     (decBlocks SEM)? progBlock
     ;
 
 procedureDef
     :
-    PRO identifier LPA argsTypeList RPA SEM
+    PRO identifier LPA (argsTypeList)? RPA SEM
     (decBlocks SEM)? progBlock
     ;
 
@@ -380,6 +382,8 @@ RPT: R E P E A T;
 UTL: U N T I L;
 TO: T O;
 DOWNTO : D O W N T O;
+BRK: B R E A K;
+CONT: C O N T I N U E;
 
 //Functions
 FUN: F U N C T I O N;

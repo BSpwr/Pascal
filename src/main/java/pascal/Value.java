@@ -93,6 +93,16 @@ public class Value {
         return (ArrayList<Pair<String, Value>>) value;
     }
 
+
+    public boolean isBreak() {
+        return equals(BREAK);
+    }
+
+
+    public boolean isContinue() {
+        return equals(CONTINUE);
+    }
+
     public boolean isVoid() {
         return equals(VOID);
     }

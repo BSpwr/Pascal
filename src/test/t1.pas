@@ -10,6 +10,7 @@ var F,L:real;
     y:array[1..10] of real;
     m:meme;
     d:meme;
+    number,sum:integer;
 
 const colMax = 76;
       rowMax = 22;
@@ -35,6 +36,12 @@ procedure ree (bee, d: boolean; st: string);
 begin
 writeln(st);
 writeln(bee, ' and ', d);
+end;
+
+procedure print_msg();
+begin
+writeln('look ma, no args!');
+break
 end;
 
 begin
@@ -131,6 +138,49 @@ begin
       writeln('i was greater than n')
   else
       writeln('i was less than n');
+
+   print_msg();
+
+   number := 8;
+   while number>0 do
+   begin
+       number := number - 1;
+       if (number = 6) then break;
+       writeln(number);
+   end;
+
+   writeln('--');
+
+  number := 8;
+  while number>0 do
+  begin
+     number := number - 1;
+     if (number = 4) then continue;
+     writeln(number);
+  end;
+
+  writeln('--');
+  for taco_loop:= 1 to 10 do
+  begin
+  if (taco_loop = 6) then continue
+  else if (taco_loop = 8) then break;
+  writeln(taco_loop);
+  end;
+
+  writeln('--');
+
+    i := 0;
+
+    repeat
+    if (i = 6) then
+    begin
+       i := i + 1;
+       continue
+    end
+    else if (i = 8) then break;
+    writeln(i);
+    i := i + 1;
+    until i = 10;
 
   writeln('All tests completed!');
 end

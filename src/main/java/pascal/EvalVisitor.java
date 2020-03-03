@@ -169,7 +169,9 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitProgBlock(PascalParser.ProgBlockContext ctx) {
-        visitChildren(ctx);
+        Value statements = this.visit(ctx.statements());
+        if (statements.isBreak() || statements.isContinue()) return statements;
+
         return Value.VOID;
     }
 
@@ -341,21 +343,96 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     }
 
     @Override
+    public Value visitStatements(PascalParser.StatementsContext ctx) {
+
+        Value impl = this.visit(ctx.implMaybe());
+        if (impl.isBreak() || impl.isContinue()) return impl;
+
+        Value statements = Value.VOID;
+
+        if (ctx.statements() != null)
+            statements = this.visit(ctx.statements());
+        if (statements.isBreak() || statements.isContinue()) return statements;
+
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitImplMaybe(PascalParser.ImplMaybeContext ctx) {
+
+        if (ctx.implementation() != null)
+            return this.visit(ctx.implementation());
+
+        return Value.VOID;
+    }
+
+    @Override
     public Value visitImplementation(PascalParser.ImplementationContext ctx) {
-        visitChildren(ctx);
+        Value impl;
+
+        if (ctx.assignment() != null) {
+            this.visit(ctx.assignment());
+        }
+        if (ctx.expr() != null) {
+            this.visit(ctx.expr());
+        }
+        if (ctx.writeln() != null) {
+            this.visit(ctx.writeln());
+        }
+        if (ctx.readln() != null) {
+            this.visit(ctx.readln());
+        }
+        if (ctx.branch() != null) {
+            impl = this.visit(ctx.branch());
+            if (impl.isBreak() || impl.isContinue()) return impl;
+        }
+        if (ctx.cases() != null) {
+            impl = this.visit(ctx.cases());
+            if (impl.isBreak() || impl.isContinue()) return impl;
+        }
+        if (ctx.progBlock() != null) {
+            impl = this.visit(ctx.progBlock());
+            if (impl.isBreak() || impl.isContinue()) return impl;
+        }
+        if (ctx.whileLoop() != null) {
+            impl = this.visit(ctx.whileLoop());
+            if (impl.isBreak() || impl.isContinue()) return impl;
+        }
+        if (ctx.forLoop() != null) {
+            impl = this.visit(ctx.forLoop());
+            if (impl.isBreak() || impl.isContinue()) return impl;
+        }
+        if (ctx.repeatUntilLoop() != null) {
+            impl = this.visit(ctx.repeatUntilLoop());
+            if (impl.isBreak() || impl.isContinue()) return impl;
+        }
+        if (ctx.codeExec() != null) {
+            impl = this.visit(ctx.codeExec());
+            if (impl.isBreak() || impl.isContinue()) return impl;
+        }
+
+        if (ctx.getText().toLowerCase().equals("break"))
+            return Value.BREAK;
+
+        if (ctx.getText().toLowerCase().equals("continue"))
+            return Value.CONTINUE;
+
         return Value.VOID;
     }
 
     @Override
     public Value visitBranch(PascalParser.BranchContext ctx) {
         Value expr = this.visit(ctx.expr());
+        Value impl;
 
         if (expr.isBoolean()) {
             if (expr.asBoolean()) {
-                this.visit(ctx.implMaybe());
+                impl = this.visit(ctx.implMaybe());
+                if (impl.isBreak() || impl.isContinue()) return impl;
             } else {
                 if (ctx.elseBranch() != null) {
-                    this.visit(ctx.elseBranch());
+                    impl = this.visit(ctx.elseBranch());
+                    if (impl.isBreak() || impl.isContinue()) return impl;
                 }
             }
         }
@@ -365,7 +442,9 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitElseBranch(PascalParser.ElseBranchContext ctx) {
-        visitChildren(ctx);
+        Value impl = this.visit(ctx.implMaybe());
+        if (impl.isBreak() || impl.isContinue()) return impl;
+
         return Value.VOID;
     }
 
@@ -378,7 +457,9 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         boolean executed = false;
         for (PascalParser.CaseStatementContext statement : statements) {
             if (executed) break;
-            executed = execCase(statement, expr).asBoolean();
+            Value control = execCase(statement, expr);
+            if (control.isBreak() || control.isContinue()) return control;
+            executed = control.asBoolean();
         }
 
         if (!executed && ctx.elseCase() != null)
@@ -390,12 +471,15 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     // return true if statement matched expr and executed, false otherwise
     public Value execCase(PascalParser.CaseStatementContext ctx, Value expr) {
 
+        Value impl = Value.FALSE;
+
         if (ctx.expr() != null) {
             Value statementExpr = this.visit(ctx.expr());
             if (expr.equals(statementExpr)) {
                 if (ctx.implementation() != null)
-                    this.visit(ctx.implementation());
-                return Value.TRUE;
+                    impl = this.visit(ctx.implementation());
+                if (impl.isBreak() || impl.isContinue()) return impl;
+                else return Value.TRUE;
             } else
                 return Value.FALSE;
         }
@@ -407,7 +491,8 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             int high = range.asIntegerArrayList().get(1);
             if (expr.asInteger() <= high && expr.asInteger() >= lo) {
                 if (ctx.implementation() != null)
-                    this.visit(ctx.implementation());
+                    impl = this.visit(ctx.implementation());
+                if (impl.isBreak() || impl.isContinue()) return impl;
                 return Value.TRUE;
             } else
                 return Value.FALSE;
@@ -425,7 +510,13 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     @Override
     public Value visitElseCase(PascalParser.ElseCaseContext ctx) {
         visitChildren(ctx);
-        return Value.VOID;
+        Value impl = Value.VOID;
+
+        if (ctx.implementation() != null)
+            impl = this.visit(ctx.implementation());
+
+        if (impl.isContinue() || impl.isBreak()) return impl;
+        else return Value.VOID;
     }
 
     @Override
@@ -442,9 +533,11 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     @Override
     public Value visitWhileLoop(PascalParser.WhileLoopContext ctx) {
         Value expr = this.visit(ctx.expr());
+        Value impl = Value.VOID;
 
         while (expr.asBoolean()) {
-            this.visit(ctx.implMaybe());
+            impl = this.visit(ctx.implMaybe());
+            if (impl.isBreak()) break;
             expr = this.visit(ctx.expr());
         }
 
@@ -459,15 +552,29 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     // TODO : Implement above details
     @Override
     public Value visitForLoop(PascalParser.ForLoopContext ctx) {
+        Value ident = this.visit(ctx.identifier());
+
         Value initial = this.visit(ctx.initial);
         Value target = this.visit(ctx.target);
 
+        Value impl;
+
         if (ctx.TO() != null) {
-            for (int i = initial.asInteger(); i <= target.asInteger(); i++)
-                this.visit(ctx.implMaybe());
+            for (int i = initial.asInteger(); i <= target.asInteger(); i++) {
+                // TODO: Needs proper scoping!
+                // Make loop variable available in scope
+                constants.put(ident.asString(), new Value(i));
+                impl = this.visit(ctx.implMaybe());
+                if (impl.isBreak()) break;
+            }
         } else {
-            for (int i = initial.asInteger(); i < target.asInteger(); i--)
-                this.visit(ctx.implMaybe());
+            for (int i = initial.asInteger(); i < target.asInteger(); i--) {
+                // TODO: Needs proper scoping!
+                // Make loop variable available in scope
+                constants.put(ident.asString(), new Value(i));
+                impl = this.visit(ctx.implMaybe());
+                if (impl.isBreak()) break;
+            }
         }
 
         return Value.VOID;
@@ -477,8 +584,11 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     public Value visitRepeatUntilLoop(PascalParser.RepeatUntilLoopContext ctx) {
         Value expr = this.visit(ctx.expr());
 
+        Value impl;
+
         while (!expr.asBoolean()) {
-            this.visit(ctx.statements());
+            impl = this.visit(ctx.statements());
+            if (impl.isBreak()) break;
             expr = this.visit(ctx.expr());
         }
 
@@ -488,10 +598,12 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     @Override
     public Value visitCodeExec(PascalParser.CodeExecContext ctx) {
         Value ident = this.visit(ctx.identifier());
-        Value args = this.visit(ctx.args());
 
         String name = ident.asString();
-        ArrayList<Value> argsList = args.asValueArrayList();
+
+        ArrayList<Value> argsList = new ArrayList<>();
+        if (ctx.args() != null)
+            argsList = this.visit(ctx.args()).asValueArrayList();
 
         Function func = null;
 
@@ -510,8 +622,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
                         variables.put(func.argsList.get(i).a, argsList.get(i));
                     } else throwE("Function -> " + name + " <- called with invalid type.");
                 }
-            }
-            catch (ArrayIndexOutOfBoundsException e) {
+            } catch (ArrayIndexOutOfBoundsException e) {
                 throwE("Function -> " + name + " <- called with invalid number of args.");
             }
 
@@ -528,8 +639,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
                     Value resultRet = getVariable("result");
                     if (!resultRet.isVoid() && resultRet.equalType(func.returnType)) ret = resultRet;
                     else throwE("Function -> " + name + " <- returned the incorrect type.");
-                }
-                else {
+                } else {
                     Value nameRet = getVariable(func.name);
                     if (!nameRet.isVoid()) ret = nameRet;
                 }
@@ -555,12 +665,15 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     // Note: functions always run until the end
     public Value visitFunctionDef(PascalParser.FunctionDefContext ctx) {
         Value ident = this.visit(ctx.identifier());
-        Value argsTypeList = this.visit(ctx.argsTypeList());
         Value varType = this.visit(ctx.varType());
         // save the code inside the function into a function table to be used later
 
         String funcName = ident.asString();
-        ArrayList<Pair<String, Value>> argsList = argsTypeList.asArgsTypeList();
+
+        ArrayList<Pair<String, Value>> argsList = new ArrayList<>();
+        if (ctx.argsTypeList() != null)
+            argsList = this.visit(ctx.argsTypeList()).asArgsTypeList();
+
         ArrayList<ParserRuleContext> functionContent = new ArrayList<>();
 
         if (ctx.decBlocks() != null)
@@ -577,11 +690,14 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     @Override
     public Value visitProcedureDef(PascalParser.ProcedureDefContext ctx) {
         Value ident = this.visit(ctx.identifier());
-        Value argsTypeList = this.visit(ctx.argsTypeList());
         // save the code inside the procedure into a procedure table to be used later
 
         String procName = ident.asString();
-        ArrayList<Pair<String, Value>> argsList = argsTypeList.asArgsTypeList();
+
+        ArrayList<Pair<String, Value>> argsList = new ArrayList<>();
+        if (ctx.argsTypeList() != null)
+            argsList = this.visit(ctx.argsTypeList()).asArgsTypeList();
+
         ArrayList<ParserRuleContext> procContent = new ArrayList<>();
 
         if (ctx.decBlocks() != null)
