@@ -38,4 +38,5 @@ public class Context{
         enumVariableValue = ctx.enumVariableValue;
         functionMap = ctx.functionMap;
     }
+
 }

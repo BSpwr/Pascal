@@ -23,6 +23,8 @@ public class ContextManager {
         this.varContainer.add(new Context());
         this.state = 0;
         this.delta = new HashMap<Integer,ArrayList<String>>();
+        // Init base delta
+        this.delta.put(0, new ArrayList<String>());
     }
 
     private ContextManager(Boolean debug){
@@ -31,6 +33,8 @@ public class ContextManager {
         this.varContainer.add(new Context());
         this.state = 0;
         this.delta = new HashMap<Integer,ArrayList<String>>();
+        // Init base delta
+        this.delta.put(0, new ArrayList<String>());
         this.debug = debug;
     }
 
@@ -46,6 +50,10 @@ public class ContextManager {
             ctxInst = new ContextManager(debug);
         }
         return ctxInst;
+    }
+
+    public Stack<Context> getVarContainer() {
+        return varContainer;
     }
 
     public void enterScope(){
@@ -245,7 +253,22 @@ public class ContextManager {
         }
     }
 
+    public Value createFunction(String name, Function func) {
+        return this.createFunction(name, func.argsList, func.functionContent, func.returnType);
+    }
+
     public Value createFunction(String name, ArrayList<Pair<String,Value>> argsList, ArrayList<ParserRuleContext> functionContent, Value returnType){
+        // If function was defined and is now being declared, make sure the variable types match
+        if (this.varContainer.peek().functionMap.containsKey(name)) {
+            Function oldFunc = this.varContainer.peek().functionMap.get(name);
+            if (oldFunc.argsList.size() != argsList.size())
+                Util.throwE("Function -> " + name + " <- is being redefined with mismatched number of variables.");
+            if (!oldFunc.returnType.equalType(returnType))
+                Util.throwE("Function -> " + name + " <- is being redefined with mismatched return type.");
+            for (int i = 0; i < oldFunc.argsList.size(); i++)
+                if (!oldFunc.argsList.get(i).b.equalType(argsList.get(i).b))
+                    Util.throwE("Function -> " + name + " <- is being redefined with mismatched types.");
+        }
         Function func = new Function(name, argsList, functionContent, returnType);
         this.varContainer.peek().functionMap.put(name, func);
         return Value.VOID;
@@ -272,7 +295,11 @@ public class ContextManager {
                 for (int i = 0; i < func.argsList.size(); i++) {
                     if (func.argsList.get(i).b.equalType(argsList.get(i))) {
                         this.varContainer.peek().variables.put(func.argsList.get(i).a, argsList.get(i));
-                    } else Util.throwE("Function -> " + name + " <- called with invalid type.");
+                    } else if (argsList.get(i).isNonFloatNumber() && func.argsList.get(i).b.isDouble()) {
+                        this.varContainer.peek().variables.put(func.argsList.get(i).a, new Value(argsList.get(i).asDouble()));
+                    }
+                    else
+                        Util.throwE("Function -> " + name + " <- called with invalid type.");
                 }
             }
             catch (ArrayIndexOutOfBoundsException e) {

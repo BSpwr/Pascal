@@ -1,10 +1,11 @@
 package pascal;
 
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.Pair;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Array;
@@ -12,6 +13,8 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 public class EvalVisitor extends PascalBaseVisitor<Value> {
+
+    String filePath = "";
 
     // if-else and case statements, DO NOT TOUCH unless ready to refactor whole
     // system
@@ -37,6 +40,10 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     // Create the ContextManager singleton
     ContextManager ctxManager = ContextManager.getInstance(debug);
 
+    public EvalVisitor(String path) {
+        this.filePath = path;
+    };
+
     // visitor start
 
     @Override
@@ -59,6 +66,18 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     }
 
     @Override
+    public Value visitProgramInternal(PascalParser.ProgramInternalContext ctx) {
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitUnitInternal(PascalParser.UnitInternalContext ctx) {
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
     public Value visitProgramHeading(PascalParser.ProgramHeadingContext ctx) {
         visitChildren(ctx);
         return Value.VOID;
@@ -66,7 +85,45 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitProgramImports(PascalParser.ProgramImportsContext ctx) {
-        visitChildren(ctx);
+        Value ident = this.visit(ctx.identifier());
+
+        File currentFile = new File(filePath);
+        String parentPath = currentFile.getParent();
+
+       String workDir = System.getProperty("user.dir");
+
+       String relativeImportFilePath = parentPath + "/" + ident.asString() + ".pas";
+       String absoluteImportFilePath = workDir + "/" + relativeImportFilePath;
+
+        File importFile = new File(absoluteImportFilePath);
+        if (!importFile.exists()) Util.throwE("File -> "+ absoluteImportFilePath + " <- does not exist.");
+
+        CharStream charStream = null;
+        try {
+            charStream = CharStreams.fromFileName(relativeImportFilePath);
+        } catch (IOException e) {
+            System.out.println("File -> "+ absoluteImportFilePath + " <- does not exist.");
+            e.printStackTrace();
+        }
+
+        PascalLexer lexer = new PascalLexer(charStream);
+        PascalParser parser = new PascalParser(new CommonTokenStream(lexer));
+        ParseTree tree = parser.start();
+        EvalVisitor visitor = new EvalVisitor(relativeImportFilePath);
+        visitor.visit(tree);
+
+        HashMap<String, Function> importFuncMap = visitor.ctxManager.getVarContainer().peek().functionMap;
+
+        Iterator<Map.Entry<String, Function>> funcMapIterator = importFuncMap.entrySet().iterator();
+
+        while (funcMapIterator.hasNext()) {
+            Map.Entry<String, Function> funcElem = funcMapIterator.next();
+            this.ctxManager.createFunction(funcElem.getKey(), funcElem.getValue());
+        }
+
+        if (ctx.programImports() != null)
+            this.visit(ctx.programImports());
+
         return Value.VOID;
     }
 
@@ -217,6 +274,9 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             case "string":
                 return Value.STRING;
         }
+
+        // It's an array type
+    //    if (ctx.varType() != null)
 
         if (ctx.arrayAlloc() != null) {
             Value arrayAlloc = this.visit(ctx.arrayAlloc());
@@ -434,8 +494,9 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
                     impl = this.visit(ctx.implementation());
                 if (impl.isBreak() || impl.isContinue())
                     return impl;
-                else
+                else {
                     return Value.TRUE;
+                }
             } else
                 return Value.FALSE;
         }
@@ -595,8 +656,8 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
         if (ctx.decBlocks() != null)
             functionContent.add(ctx.decBlocks());
-
-        functionContent.add(ctx.progBlock());
+        if (ctx.progBlock() != null)
+            functionContent.add(ctx.progBlock());
 
         return this.ctxManager.createFunction(funcName, argsList, functionContent, varType);
     }

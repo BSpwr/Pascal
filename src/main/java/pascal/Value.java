@@ -9,7 +9,7 @@ public class Value {
     public static Value VOID = new Value(new Object());
 
     public static Value FALSE = new Value(false);
-    public static Value TRUE = new Value(false);
+    public static Value TRUE = new Value(true);
 
     public static Value CONTINUE = new Value("__PASCAL_INTERPRETER_INTERNAL_CONTINUE_STATEMENT");
     public static Value BREAK = new Value("__PASCAL_INTERPRETER_INTERNAL_BREAK_STATEMENT");
@@ -38,15 +38,18 @@ public class Value {
     }
 
     public Character asCharacter() {
-        return value.toString().charAt(0);
+        if (isCharacter()) return (Character) value;
+        else return value.toString().charAt(0);
     }
 
     public Integer asInteger() {
-        return (int) Double.parseDouble(value.toString());
+        if (isInteger()) return (Integer) value;
+        else return (int) Double.parseDouble(value.toString());
     }
 
     public Double asDouble() {
-        return Double.parseDouble(value.toString());
+        if (isDouble()) return (Double) value;
+        else return Double.parseDouble(value.toString());
     }
 
     public String asString() {

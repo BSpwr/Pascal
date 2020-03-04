@@ -19,12 +19,11 @@ public class Main {
             return;
         }
 
-        System.out.println("parsing: " + args[0]);
         CharStream charStream = CharStreams.fromFileName(args[0]);
         PascalLexer lexer = new PascalLexer(charStream);
         PascalParser parser = new PascalParser(new CommonTokenStream(lexer));
         ParseTree tree = parser.start();
-        EvalVisitor visitor = new EvalVisitor();
+        EvalVisitor visitor = new EvalVisitor(args[0]);
         visitor.visit(tree);
     }
 }

@@ -42,6 +42,15 @@ jar {
 }
 
 task execute(type: Exec) {
-    commandLine 'build/install/Pascal2/bin/Pascal2', 'src/test/t1.pas'
+    commandLine 'build/install/Pascal2/bin/Pascal2', 'src/test/areaCalculation.pas'
     ignoreExitValue true
 }
+
+dependencies {
+    testImplementation 'junit:junit:4.12'
+}
+
+test {
+    useJUnit()
+}
+

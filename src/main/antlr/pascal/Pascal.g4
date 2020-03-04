@@ -17,16 +17,24 @@ debug
     ;
 
 program
-    : programHeading (ITR)? (programImports)? (decBlocks SEM)? (codeDefs SEM)? progBlock DOT EOF
+    : programHeading (programInternal | unitInternal) DOT EOF
+    ;
+
+programInternal
+    : (programImports)? (decBlocks SEM)? (codeDefs SEM)? progBlock
+    ;
+
+unitInternal
+    : ITR (codeDefs SEM)? IMPL (codeDefs SEM)? END
     ;
 
 programHeading
     : (PRM identifier (LPA identifierList RPA)? SEM)
-    | (UNI identifier)
+    | (UNI identifier SEM)
     ;
 
 programImports
-    : USE identifier SEM
+    : USE identifier SEM (programImports)?
     ;
 
 identifier
@@ -89,9 +97,14 @@ varType
     | REL
     | BOL
     | CHR
-    | STR ('[' INV ']')?
+    | STR
+    | varType (arrayIndex)+
     | arrayAlloc
     | identifier
+    ;
+
+arrayIndex
+    : '[' INV ']'
     ;
 
 arrayAlloc
@@ -193,14 +206,14 @@ codeDefs
 
 functionDef
     :
-    FUN identifier LPA (argsTypeList)? RPA COL varType SEM
-    (decBlocks SEM)? progBlock
+    FUN identifier (LPA argsTypeList RPA)? COL varType
+    (SEM (decBlocks SEM)? progBlock)?
     ;
 
 procedureDef
     :
-    PRO identifier LPA (argsTypeList)? RPA SEM
-    (decBlocks SEM)? progBlock
+    PRO identifier (LPA argsTypeList RPA)?
+    (SEM (decBlocks SEM)? progBlock)?
     ;
 
 argsTypeList
@@ -253,6 +266,8 @@ expr
     | el=expr MUL er=expr #mulExpr
     | el=expr DIV er=expr #divExpr
     | el=expr MOD er=expr #modExpr
+    | el=expr EQU er=expr #equExpr
+    | el=expr NEQ er=expr #notEquExpr
     | el=expr (BND|AND) er=expr #andExpr
     | el=expr (SHL|BSL) er=expr #bitwiseShiftLeftExpr
     | el=expr (SHR|BSR) er=expr #bitwiseShiftRightExpr
@@ -260,8 +275,6 @@ expr
     | el=expr XOR er=expr #xorExpr
     | el=expr ADD er=expr #addExpr
     | el=expr SUB er=expr #subExpr
-    | el=expr EQU er=expr #equExpr
-    | el=expr NEQ er=expr #notEquExpr
     | el=expr LES er=expr #lesExpr
     | el=expr LEQ er=expr #leqExpr
     | el=expr GRT er=expr #grtExpr
@@ -290,8 +303,6 @@ string
 /**
  *Lexer
  */
-fragment DGT: [0–9];
-fragment LTR: [a-zA-Z];
 
 fragment A: ('a' | 'A');
 fragment B: ('b' | 'B');
@@ -359,6 +370,7 @@ TYP: T Y P E;
 PRM: P R O G R A M;
 BGN: B E G I N;
 END: E N D;
+IMPL: I M P L E M E N T A T I O N;
 
 //Branch Words
 IF: I F;
@@ -431,7 +443,8 @@ TRU: T R U E;
 FLS: F A L S E;
 
 //User Input
-IDE: [_]*(LTR)([_]|LTR|DGT)*;
+IDE: [a-zA-Z_][a-zA-Z0-9_]*;
+
 INV: [0-9]+;
 DBV: [0-9]*'.'INV;
 STV: '\''(~'\'')+'\'';

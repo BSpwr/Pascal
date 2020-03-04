@@ -39,6 +39,16 @@ writeln(st);
 writeln(bee, ' and ', d);
 end;
 
+function fib(a:integer): integer;
+begin
+    case a of
+        0: fib := 0;
+        1: fib := 1;
+        else
+            fib := fib(a-1) + fib(a-2);
+    end;
+end;
+
 procedure print_msg();
 var
     str: string = 'look ma, no args!';
@@ -187,6 +197,8 @@ begin
         i := i + 1;
     until i = 10;
 
+    writeln('--');
+    writeln(fib(9));
   writeln('All tests completed!');
 end
 .
