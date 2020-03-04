@@ -17,11 +17,4 @@ public class Function {
         this.functionContent = functionContent;
         this.returnType = returnType;
     }
-
-    public Function(String name, ArrayList<Pair<String,Value>> argsList, ArrayList<ParserRuleContext> functionContent) {
-        this.name = name;
-        this.argsList = argsList;
-        this.functionContent = functionContent;
-        this.returnType = Value.VOID;
-    }
 }

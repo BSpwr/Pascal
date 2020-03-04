@@ -40,8 +40,10 @@ writeln(bee, ' and ', d);
 end;
 
 procedure print_msg();
+var
+    str: string = 'look ma, no args!';
 begin
-writeln('look ma, no args!');
+writeln(str);
 break
 end;
 
@@ -169,18 +171,20 @@ begin
   end;
 
   writeln('--');
+  writeln(taco_loop);
+  writeln('--');
 
     i := 0;
 
     repeat
     if (i = 6) then
     begin
-       i := i + 1;
-       continue
+        i := i + 1;
+    continue
     end
     else if (i = 8) then break;
-    writeln(i);
-    i := i + 1;
+        writeln(i);
+        i := i + 1;
     until i = 10;
 
   writeln('All tests completed!');

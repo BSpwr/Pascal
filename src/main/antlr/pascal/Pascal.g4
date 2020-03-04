@@ -77,7 +77,7 @@ typeType
     ;
 
 varDef
-    : varList COL varType (SEM varDef)?
+    : varList COL varType (EQU expr)? (SEM varDef)?
     ;
 
 varList
