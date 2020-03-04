@@ -216,19 +216,11 @@ args
 /* Print Statements */
 
 writeln
-    : WRL LPA writelnFunc RPA
-    ;
-
-writelnFunc
-    : args
+    : WRL LPA args RPA
     ;
 
 readln
-    : RDL LPA readlnFunc RPA
-    ;
-
-readlnFunc
-    : typeType
+    : RDL LPA typeType RPA
     ;
 
 /* Math */
@@ -253,7 +245,7 @@ cosine
     : COS LPA expr RPA
     ;
 
-/* Arithmetic */
+/* Expressions */
 expr
     : LPA expr RPA #parenExpr
     | BOC expr #bitwiseNotExpr
@@ -265,7 +257,7 @@ expr
     | el=expr (SHL|BSL) er=expr #bitwiseShiftLeftExpr
     | el=expr (SHR|BSR) er=expr #bitwiseShiftRightExpr
     | el=expr (BOR|'!'|OR) er=expr #orExpr
-    | el=expr XOR er=expr #bitwiseXorExpr
+    | el=expr XOR er=expr #xorExpr
     | el=expr ADD er=expr #addExpr
     | el=expr SUB er=expr #subExpr
     | el=expr EQU er=expr #equExpr
@@ -294,6 +286,7 @@ expr
 string
     : STV
     ;
+
 /**
  *Lexer
  */

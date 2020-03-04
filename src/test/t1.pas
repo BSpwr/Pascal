@@ -11,6 +11,7 @@ var F,L:real;
     m:meme;
     d:meme;
     number,sum:integer;
+    taco_loop:integer;
 
 const colMax = 76;
       rowMax = 22;

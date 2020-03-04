@@ -200,7 +200,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
                 }
             }
         }
-        visitChildren(ctx);
+
         return Value.VOID;
     }
 
@@ -285,7 +285,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             return ident;
         }
 
-        visitChildren(ctx);
         return Value.VOID;
     }
 
@@ -337,7 +336,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         }
 
         if (ctx.constDef() != null)
-            visitChildren(ctx);
+            this.visit(ctx.constDef());
 
         return Value.VOID;
     }
@@ -509,7 +508,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitElseCase(PascalParser.ElseCaseContext ctx) {
-        visitChildren(ctx);
         Value impl = Value.VOID;
 
         if (ctx.implementation() != null)
@@ -526,7 +524,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
         setVariable(ident.asString(), expr);
 
-        visitChildren(ctx);
         return Value.VOID;
     }
 
@@ -563,7 +560,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             for (int i = initial.asInteger(); i <= target.asInteger(); i++) {
                 // TODO: Needs proper scoping!
                 // Make loop variable available in scope
-                constants.put(ident.asString(), new Value(i));
+                setVariable(ident.asString(), new Value(i));
                 impl = this.visit(ctx.implMaybe());
                 if (impl.isBreak()) break;
             }
@@ -571,7 +568,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             for (int i = initial.asInteger(); i < target.asInteger(); i--) {
                 // TODO: Needs proper scoping!
                 // Make loop variable available in scope
-                constants.put(ident.asString(), new Value(i));
+                setVariable(ident.asString(), new Value(i));
                 impl = this.visit(ctx.implMaybe());
                 if (impl.isBreak()) break;
             }
@@ -761,12 +758,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitWriteln(PascalParser.WritelnContext ctx) {
-        visitChildren(ctx);
-        return Value.VOID;
-    }
-
-    @Override
-    public Value visitWritelnFunc(PascalParser.WritelnFuncContext ctx) {
 
         BufferedWriter foutput = new BufferedWriter(new OutputStreamWriter(System.out));
 
@@ -798,12 +789,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitReadln(PascalParser.ReadlnContext ctx) {
-        visitChildren(ctx);
-        return Value.VOID;
-    }
-
-    @Override
-    public Value visitReadlnFunc(PascalParser.ReadlnFuncContext ctx) {
 
         Scanner uInput = new Scanner(System.in);
 
@@ -840,6 +825,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
             setVariable(arg, v);
         }
+
         return Value.VOID;
     }
 
@@ -1038,7 +1024,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     }
 
     @Override
-    public Value visitBitwiseXorExpr(PascalParser.BitwiseXorExprContext ctx) {
+    public Value visitXorExpr(PascalParser.XorExprContext ctx) {
         Value el = this.visit(ctx.el);
         Value er = this.visit(ctx.er);
 
@@ -1119,7 +1105,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             return new Value(el.asDouble() < er.asDouble());
         }
 
-        visitChildren(ctx);
         return Value.VOID;
     }
 
@@ -1132,7 +1117,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             return new Value(el.asDouble() <= er.asDouble());
         }
 
-        visitChildren(ctx);
         return Value.VOID;
     }
 
@@ -1145,7 +1129,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             return new Value(el.asDouble() > er.asDouble());
         }
 
-        visitChildren(ctx);
         return Value.VOID;
     }
 
@@ -1158,7 +1141,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             return new Value(el.asDouble() >= er.asDouble());
         }
 
-        visitChildren(ctx);
         return Value.VOID;
     }
 
@@ -1278,7 +1260,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     public Value visitString(PascalParser.StringContext ctx) {
         //drop the quotes surrounding the string
         String ret = ctx.getText().substring(1, ctx.getText().length() - 1);
-        visitChildren(ctx);
         return new Value(ret);
     }
 
