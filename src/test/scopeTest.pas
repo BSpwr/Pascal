@@ -1,13 +1,12 @@
 program scopeTest;
 var
-   a, b, c,d: integer;
+   a, b, c: integer;
 
 procedure scopeTest(a,b,c: integer);
 begin
    a := 10;
    b := 20;
    c := a + b;
-   d := 0;
 
    writeln('In function scope');
    writeln('value of a = ', a , ' b =  ',  b, ' and c = ', c);

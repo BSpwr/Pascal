@@ -20,4 +20,6 @@ begin
 
    area:= TriangleArea(a, b, c);
    writeln('Area of Triangle 3.0 by 4.0 by 5.0 is: ', area);
+
+   writeln(calcAreaStr);
 end.

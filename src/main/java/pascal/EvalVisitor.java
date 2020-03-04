@@ -26,17 +26,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     Boolean breakCase = false;
     Value caseSel = Value.VOID;
 
-    // Deprecate and hide behind context manager
-    // HashMap<String, Value> variables = new HashMap<String, Value>();
-    // HashMap<String, Value> constants = new HashMap<String, Value>();
-    // HashMap<String, ArrayList<String>> enums = new HashMap<String,
-    // ArrayList<String>>();
-    //
-    // HashMap<String, String> enumVariableType = new HashMap<String, String>();
-    // HashMap<String, String> reserved = new HashMap<String, String>();
-    //
-    // HashMap<String, Function> functionMap = new HashMap<String, Function>();
-
     // Create the ContextManager singleton
     ContextManager ctxManager = ContextManager.getInstance(debug);
 
@@ -78,7 +67,19 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
     }
 
     @Override
+    public Value visitDefs(PascalParser.DefsContext ctx) {
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
     public Value visitProgramHeading(PascalParser.ProgramHeadingContext ctx) {
+        visitChildren(ctx);
+        return Value.VOID;
+    }
+
+    @Override
+    public Value visitUnitHeading(PascalParser.UnitHeadingContext ctx) {
         visitChildren(ctx);
         return Value.VOID;
     }
@@ -112,17 +113,18 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         EvalVisitor visitor = new EvalVisitor(relativeImportFilePath);
         visitor.visit(tree);
 
-        HashMap<String, Function> importFuncMap = visitor.ctxManager.getVarContainer().peek().functionMap;
-
-        Iterator<Map.Entry<String, Function>> funcMapIterator = importFuncMap.entrySet().iterator();
-
-        while (funcMapIterator.hasNext()) {
-            Map.Entry<String, Function> funcElem = funcMapIterator.next();
-            this.ctxManager.createFunction(funcElem.getKey(), funcElem.getValue());
-        }
-
-        if (ctx.programImports() != null)
-            this.visit(ctx.programImports());
+//        ---- The below code is not needed, because ctxManager is a singleton! ----
+//        HashMap<String, Function> importFuncMap = visitor.ctxManager.getVarContainer().peek().functionMap;
+//
+//        Iterator<Map.Entry<String, Function>> funcMapIterator = importFuncMap.entrySet().iterator();
+//
+//        while (funcMapIterator.hasNext()) {
+//            Map.Entry<String, Function> funcElem = funcMapIterator.next();
+//            this.ctxManager.createFunction(funcElem.getKey(), funcElem.getValue());
+//        }
+//
+//        if (ctx.programImports() != null)
+//            this.visit(ctx.programImports());
 
         return Value.VOID;
     }

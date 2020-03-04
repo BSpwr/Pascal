@@ -17,20 +17,28 @@ debug
     ;
 
 program
-    : programHeading (programInternal | unitInternal) DOT EOF
+    : (programInternal | unitInternal) DOT EOF
     ;
 
 programInternal
-    : (programImports)? (decBlocks SEM)? (codeDefs SEM)? progBlock
+    : programHeading (programImports)? (defs SEM)? progBlock
     ;
 
 unitInternal
-    : ITR (codeDefs SEM)? IMPL (codeDefs SEM)? END
+    : unitHeading (programImports)? ITR (defs SEM)? IMPL (defs SEM)? END
+    ;
+
+defs
+    : decBlocks (SEM defs)?
+    | codeDefs (SEM defs)?
     ;
 
 programHeading
-    : (PRM identifier (LPA identifierList RPA)? SEM)
-    | (UNI identifier SEM)
+    : PRM identifier (LPA identifierList RPA)? SEM
+    ;
+
+unitHeading
+    : UNI identifier SEM
     ;
 
 programImports
@@ -197,7 +205,7 @@ repeatUntilLoop
     ;
 
 codeExec
-    : identifier LPA (args)? RPA
+    : identifier (LPA args? RPA)?
     ;
 
 codeDefs

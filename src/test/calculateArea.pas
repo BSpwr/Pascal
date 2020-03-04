@@ -1,6 +1,8 @@
 unit calculateArea;
 interface
 
+var calcAreaStr :string = 'This was imported!';
+
 function RectangleArea( length, width: real): real;
 function CircleArea(radius: real) : real;
 function TriangleArea( side1, side2, side3: real): real;
