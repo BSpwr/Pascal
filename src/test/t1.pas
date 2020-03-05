@@ -197,8 +197,6 @@ begin
         i := i + 1;
     until i = 10;
 
-    writeln('--');
-    writeln(fib(9));
   writeln('All tests completed!');
 end
 .

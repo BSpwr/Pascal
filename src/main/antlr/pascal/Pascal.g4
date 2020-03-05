@@ -9,7 +9,7 @@ grammar Pascal;
  */
 
 start
-    : debug
+    : program
     ;
 
 debug
@@ -214,13 +214,13 @@ codeDefs
 
 functionDef
     :
-    FUN identifier (LPA argsTypeList RPA)? COL varType
+    FUN identifier (LPA argsTypeList? RPA)? COL varType
     (SEM (decBlocks SEM)? progBlock)?
     ;
 
 procedureDef
     :
-    PRO identifier (LPA argsTypeList RPA)?
+    PRO identifier (LPA argsTypeList? RPA)?
     (SEM (decBlocks SEM)? progBlock)?
     ;
 

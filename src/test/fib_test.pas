@@ -16,18 +16,9 @@ begin
     else fib_if := fib_if(a-1) + fib_if(a-2);
 end;
 
-function TriangleArea(side1, side2, side3: real): real;
-var
-   s, area: real;
 begin
-   s := (side1 + side2 + side3)/2.0;
-   area := sqrt(s * (s - side1)*(s-side2)*(s-side3));
-   TriangleArea := area;
-end;
-
-begin
-// TODO: Make a fib implementation with arrays and check against each other :)
+if (fib_case(20) <> fib_if(20)) then
+    writeln('FIB ERROR');
 writeln(fib_case(20));
 writeln(fib_if(20));
-writeln(TriangleArea(12.1,13,14));
 end.

@@ -4,6 +4,8 @@ plugins {
     id "application"
 }
 
+apply plugin: 'java-library'
+
 group 'pascal'
 version '1.0-SNAPSHOT'
 
@@ -14,7 +16,6 @@ repositories {
 }
 
 dependencies {
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
     antlr "org.antlr:antlr4:4.8" // use ANTLR version 4
 }
 
@@ -37,20 +38,16 @@ application.mainClassName = 'pascal.Main'
 jar {
     manifest {
         attributes 'Main-Class': mainClassName,
-                'Class-Path': configurations.runtime.files.collect {"$it.name"}.join(' ')
+                'Class-Path': configurations.runtimeClasspath.files.collect {"$it.name"}.join(' ')
     }
 }
 
-task execute(type: Exec) {
-    commandLine 'build/install/Pascal2/bin/Pascal2', 'src/test/areaCalculation.pas'
+task runInterpreter(type: Exec) {
+    commandLine 'build/install/Pascal2/bin/Pascal2', 'src/test/fib_test.pas'
     ignoreExitValue true
 }
 
-dependencies {
-    testImplementation 'junit:junit:4.12'
-}
+task runTests(type: Exec) {
+    commandLine 'bash', 'runTests.bash'
 
-test {
-    useJUnit()
 }
-

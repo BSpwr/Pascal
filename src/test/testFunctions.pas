@@ -10,7 +10,7 @@ procedure hello_world;
 var
     st: string;
 begin
-    st := "Hello, world."
+    st := 'Hello, world.';
     writeln(hello_world);
 end;
 
