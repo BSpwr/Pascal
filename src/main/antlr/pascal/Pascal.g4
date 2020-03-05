@@ -140,7 +140,7 @@ implMaybe
 
 implementation
     : assignment
-    | expr
+    | codeExec
     | writeln
     | readln
     | branch

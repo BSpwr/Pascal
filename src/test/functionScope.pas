@@ -10,6 +10,6 @@ begin
 end;
 
 begin
-hi();
+hi;
 writeln(g);
 end.

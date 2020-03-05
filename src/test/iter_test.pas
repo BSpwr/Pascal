@@ -29,6 +29,6 @@ program iter_test;
   begin
     if (fib_while(20) <> fib_for(20)) then
       writeln('FIB ERROR');
-    writeln(fib_while(20));
-    writeln(fib_for(20));
+    writeln(fib_while(42));
+    writeln(fib_for(42));
   end.

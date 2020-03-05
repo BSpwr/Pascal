@@ -380,8 +380,8 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         if (ctx.assignment() != null) {
             this.visit(ctx.assignment());
         }
-        if (ctx.expr() != null) {
-            this.visit(ctx.expr());
+        if (ctx.codeExec() != null) {
+            this.visit(ctx.codeExec());
         }
         if (ctx.writeln() != null) {
             this.visit(ctx.writeln());
@@ -1159,8 +1159,21 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     @Override
     public Value visitIdentifierExpr(PascalParser.IdentifierExprContext ctx) {
-        Value indent = this.visit(ctx.identifier());
-        return this.ctxManager.getVariable(indent.asString());
+        Value ident = this.visit(ctx.identifier());
+        String name = ident.asString();
+
+        if (!this.ctxManager.getVariable(name).isVoid() && !this.ctxManager.getVarContainer().peek().functionMap.containsKey(name))
+            return this.ctxManager.getVariable(ident.asString());
+        else if (this.ctxManager.getVariable(name).isVoid() && this.ctxManager.getVarContainer().peek().functionMap.containsKey(name)) {
+            ArrayList<Value> argsList = new ArrayList<>();
+            return this.ctxManager.doFunction(this, name, argsList);
+        } else if (this.ctxManager.getVariable(name).isVoid() && !this.ctxManager.getVarContainer().peek().functionMap.containsKey(name)) {
+            Util.throwE("Identifier -> " + name + " <- is not defined.");
+        } else {
+            Util.throwE("Identifier -> " + name + " <- is overloaded.");
+        }
+
+        return Value.VOID;
     }
 
     @Override
