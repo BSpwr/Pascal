@@ -308,7 +308,6 @@ public class ContextManager {
         //update state
         this.enterScope();
 
-
         if (func != null) {
             try {
                 for (int i = 0; i < func.argsList.size(); i++) {

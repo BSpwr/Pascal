@@ -149,7 +149,6 @@ implementation
     | whileLoop
     | forLoop
     | repeatUntilLoop
-    | codeExec
     | BRK
     | CONT
     ;

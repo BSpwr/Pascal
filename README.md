@@ -13,11 +13,11 @@ To execute: Run `bash ./runTests.bash` from the same directory this file is in.
 Fully working:
 - while-do and for-do loops
 - break and continue keywords inside loops
-- user-defined procedures and functions
+- user-defined procedures and functions (with static scope)
 
 ## Bonus Features
 Fully working:
-- Formal parameter passing in procedures/functions
+- formal parameter passing in procedures/functions
 
 ## Extra Features (Not on assignment sheet)
 Fully working:

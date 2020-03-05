@@ -11,7 +11,7 @@ var
     st: string;
 begin
     st := 'Hello, world.';
-    writeln(hello_world);
+    writeln(st);
 end;
 
 end .

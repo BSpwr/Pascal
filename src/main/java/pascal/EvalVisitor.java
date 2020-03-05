@@ -419,11 +419,6 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             if (impl.isBreak() || impl.isContinue())
                 return impl;
         }
-        if (ctx.codeExec() != null) {
-            impl = this.visit(ctx.codeExec());
-            if (impl.isBreak() || impl.isContinue())
-                return impl;
-        }
 
         if (ctx.getText().toLowerCase().equals("break"))
             return Value.BREAK;
