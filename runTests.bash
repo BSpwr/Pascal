@@ -17,7 +17,6 @@ fi
 
 echo "----"
 echo "Beginning tests"
-echo "----"
 
 src_extension=".pas"
 in_extension=".in"
@@ -58,8 +57,6 @@ for i in "$test_dir"/*"$src_extension"; do
         echo "DIFF FOR $testname"
         diff -u <(echo "$result") <(echo "$expected_result")
     fi;
-
-    echo "----"
 
 done
 

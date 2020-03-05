@@ -6,7 +6,7 @@ var g : string = 'Im a global!';
 procedure hi;
 begin
     writeln(g);
-    g := 'Global set';
+    g := 'Global set from function';
 end;
 
 begin

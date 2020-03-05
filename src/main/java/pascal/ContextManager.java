@@ -3,10 +3,7 @@ package pascal;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Pair;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Stack;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 public class ContextManager {
@@ -83,8 +80,19 @@ public class ContextManager {
         }
     }
 
+    public void overrideGlobals(ArrayList<String> idents){
+        if (this.state > 0) {
+            for (String ident : idents) {
+                if (this.delta.get(0).contains(ident)) {
+                    this.varContainer.get(this.state).overrides.add(ident);
+                }
+            }
+        }
+    }
+
     public void createVariable(ArrayList<String> varNames, Value varType){
-        addToDelta(varNames);
+        this.addToDelta(varNames);
+        this.overrideGlobals(varNames);
         //Check if it's an enum type
         if(this.varContainer.peek().enumDataType.containsKey(varType.asString())) {
             this.varContainer.peek().enumVariableType.putAll(IntStream.range(0, varNames.size())
@@ -105,7 +113,8 @@ public class ContextManager {
     }
 
     public void createConst(ArrayList<String> varNames, Value expr){
-        addToDelta(varNames);
+        this.addToDelta(varNames);
+        this.overrideGlobals(varNames);
 
         this.varContainer.peek().constants.putAll(IntStream.range(0, varNames.size())
                 .collect(HashMap::new,
@@ -116,7 +125,8 @@ public class ContextManager {
     public void createEnum(Value ident, ArrayList<String> enumTypes){
         ArrayList<String> idents = new ArrayList<String>();
         idents.add(ident.asString());
-        addToDelta(idents);
+        this.addToDelta(idents);
+        this.overrideGlobals(idents);
 
         this.varContainer.peek().enumDataType.put(ident.asString(), enumTypes);
     }
@@ -213,9 +223,9 @@ public class ContextManager {
      * @param vars
      * @return
      */
-    public Context dupVariables(ArrayList<String> vars){
+    public Context dupContext(ArrayList<String> vars){
         Context nCtx = new Context();
-        //copy variables to the new context
+        //copy variables to the new context, new contexts do not inherit overrides
         for (String var : vars){
             if (this.varContainer.peek().variables.containsKey(var)) {
                 nCtx.variables.put(var, this.varContainer.peek().variables.get(var));
@@ -233,14 +243,17 @@ public class ContextManager {
     }
 
     /**
-     * Restores the variables referred to in vars from their values in the top of the stack
+     * Restores the variables referred to in vars from their values in the top of the stack, ignoring values whose variable names overrode global def
      * @param vars
      */
-    public void revertVariables(ArrayList<String> vars){
+    public void revertContext(ArrayList<String> vars){
         //pop off the stack
         Context dCtx = this.varContainer.pop();
+        //remove overrides from the set without affecting the original
+        ArrayList<String> tVars = new ArrayList<String>(vars);
+        tVars.removeAll(dCtx.overrides);
         //update the variables
-        for (String var : vars){
+        for (String var : tVars){
             if (dCtx.variables.containsKey(var)) {
                 this.varContainer.peek().variables.replace(var, dCtx.variables.get(var));
             } else if (dCtx.constants.containsKey(var)) {
@@ -275,7 +288,7 @@ public class ContextManager {
     }
 
     /**
-     * Handles functions
+     * Captures function parameters and parent, and recursively executes the contents
      * @param caller
      * @param name
      * @param argsList
@@ -285,14 +298,19 @@ public class ContextManager {
         Function func = this.varContainer.peek().functionMap.getOrDefault(name, null);
         Value ret = Value.VOID;
 
+        ArrayList<String> argsToOverride = new ArrayList<String>();
+
         //generate a new context
-        this.varContainer.push(dupVariables(this.delta.get(0)));
+        this.varContainer.push(dupContext(this.delta.get(0)));
         //update state
         this.enterScope();
+
 
         if (func != null) {
             try {
                 for (int i = 0; i < func.argsList.size(); i++) {
+                    //add the args to the overrides
+                    argsToOverride.add(func.argsList.get(i).a);
                     if (func.argsList.get(i).b.equalType(argsList.get(i))) {
                         this.varContainer.peek().variables.put(func.argsList.get(i).a, argsList.get(i));
                     } else if (argsList.get(i).isNonFloatNumber() && func.argsList.get(i).b.isDouble()) {
@@ -305,6 +323,9 @@ public class ContextManager {
             catch (ArrayIndexOutOfBoundsException e) {
                 Util.throwE("Function -> " + name + " <- called with invalid number of args.");
             }
+
+            //override globals
+            this.overrideGlobals(argsToOverride);
 
             // for returns
             if (!func.returnType.isVoid())
@@ -328,7 +349,7 @@ public class ContextManager {
         } else Util.throwE("Function -> " + name + " <- is not defined.");
 
         //destroy current context and update globals
-        this.revertVariables(this.delta.get(0));
+        this.revertContext(this.delta.get(0));
         //update state without running ref removal
         this.unsafeExitScope();
 
