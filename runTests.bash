@@ -6,7 +6,7 @@ echo 'Pascal Interpreter Testing Harness for Project 2'
 
 echo "----"
 echo 'Compiling Pascal interpreter'
-gradle installDist
+./gradlew installDist
 
 if [ $? -ne 0 ]; then
   echo "ERROR: Compilation failed!"
