@@ -220,6 +220,9 @@ public class Value {
     }
 
     public boolean equals(Value rhs) {
+        if ((isDouble() || isNonFloatNumber()) && (rhs.isDouble() || rhs.isNonFloatNumber())) {
+            return asDouble().equals(rhs.asDouble());
+        }
         return value.equals(rhs.value);
     }
 

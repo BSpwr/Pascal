@@ -9,10 +9,9 @@ echo 'Compiling Pascal interpreter'
 echo "----"
 gradle installDist
 
-if [ $? -ne 0 ]
-then
-    echo "ERROR: Compilation failed!"
-    exit
+if [ $? -ne 0 ]; then
+  echo "ERROR: Compilation failed!"
+  exit
 fi
 
 echo "----"
@@ -26,41 +25,45 @@ total=0
 
 test_dir="src/test"
 
-for i in "$test_dir"/*"$src_extension"; do
+declare -a test_folders=("." "p1_tests")
+
+for folder in "${test_folders[@]}"; do
+  for i in "$test_dir"/"$folder"/*"$src_extension"; do
     testname=${i//"$test_dir/"/}
     infile=${i//$src_extension/$in_extension}
     outfile=${i//$src_extension/$out_extension}
 
     if [ -f "$infile" ]; then
-        result=$(build/install/Pascal2/bin/Pascal2 "${i}" < "$infile")
+      result=$(build/install/Pascal2/bin/Pascal2 "${i}" <"$infile")
     else
-        result=$(build/install/Pascal2/bin/Pascal2 "${i}")
+      result=$(build/install/Pascal2/bin/Pascal2 "${i}")
     fi
 
     if [ ! -f "$outfile" ]; then
-        echo "ERROR: No outfile for $testname"
-        exit
+      echo "ERROR: No outfile for $testname"
+      exit
     fi
 
     expected_result=$(cat "$outfile")
 
-    total=$((total+1))
+    total=$((total + 1))
 
     echo "----"
 
-    if [ "$result" == "$expected_result" ]
-    then
-        passed=$((passed+1))
-        echo "$testname PASSED!"
+    if [ "$result" == "$expected_result" ]; then
+      passed=$((passed + 1))
+      echo "$testname PASSED!"
     else
-        echo "$testname FAILED!"
-        echo "DIFF FOR $testname"
-        diff -u <(echo "$result") <(echo "$expected_result")
-    fi;
+      echo "$testname FAILED!"
+      echo "DIFF FOR $testname"
+      diff -u <(echo "$result") <(echo "$expected_result")
+    fi
 
+  done
 done
 
-failed=$((total-passed))
+failed=$((total - passed))
 
+echo "----"
 echo "$passed TESTS PASSED"
 echo "$failed TESTS FAILED"

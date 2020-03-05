@@ -15,10 +15,10 @@ begin
     a := 10;
     b := b * b * b;
 
-    writeln(grade, good);
-    writeln(junk, junk2);
-    writeln('', s);
-    writeln('', a);
-    writeln('', b);
+    writeln(grade, ' ', good);
+    writeln(junk, ' ', junk2);
+    writeln(s);
+    writeln(a);
+    writeln(b);
 
 end.

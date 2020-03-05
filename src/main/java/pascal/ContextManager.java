@@ -163,6 +163,9 @@ public class ContextManager {
             if (v.equalType(k)) {
                 ret = this.varContainer.peek().variables.get(key);
                 this.varContainer.peek().variables.replace(key, v);
+            } else if (v.isNonFloatNumber() && k.isDouble()) {
+                ret = this.varContainer.peek().variables.get(key);
+                this.varContainer.peek().variables.replace(key, new Value(v.asDouble()));
             } else {
                 Util.throwE("Unmatched types on assignment");
             }

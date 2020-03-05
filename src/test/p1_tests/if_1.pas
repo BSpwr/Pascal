@@ -16,8 +16,8 @@ begin
       writeln('second statement of compound')
       end
    else if grade = 'A' then
-      writeln('WOW A!');
-   else if grade != 'F' then
+      writeln('WOW A!')
+   else if grade <> 'F' then
       writeln('Not Fail!')
    else writeln('Bad job, its an F');
    

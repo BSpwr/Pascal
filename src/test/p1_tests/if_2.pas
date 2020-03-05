@@ -11,10 +11,10 @@ begin
       writeln('second statement of compound')
       end
    else if grade = 'A' then
-      writeln('WOW A!');
-   else if grade != 'F' then
+      writeln('WOW A!')
+   else if grade <> 'F' then
       writeln('Not Fail!')
-   else begin 
+   else begin
         writeln('Compound statement 1');
         writeln('Compound statement 2')
    end;

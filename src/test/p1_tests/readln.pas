@@ -11,5 +11,5 @@ begin
     writeln(a);
     writeln(b);
     writeln(c);
-    writeln(d, e);
+    writeln(d, ' ', e);
 end.

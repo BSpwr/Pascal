@@ -31,7 +31,9 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
 
     public EvalVisitor(String path) {
         this.filePath = path;
-    };
+    }
+
+    ;
 
     // visitor start
 
@@ -91,19 +93,19 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         File currentFile = new File(filePath);
         String parentPath = currentFile.getParent();
 
-       String workDir = System.getProperty("user.dir");
+        String workDir = System.getProperty("user.dir");
 
-       String relativeImportFilePath = parentPath + "/" + ident.asString() + ".pas";
-       String absoluteImportFilePath = workDir + "/" + relativeImportFilePath;
+        String relativeImportFilePath = parentPath + "/" + ident.asString() + ".pas";
+        String absoluteImportFilePath = workDir + "/" + relativeImportFilePath;
 
         File importFile = new File(absoluteImportFilePath);
-        if (!importFile.exists()) Util.throwE("File -> "+ absoluteImportFilePath + " <- does not exist.");
+        if (!importFile.exists()) Util.throwE("File -> " + absoluteImportFilePath + " <- does not exist.");
 
         CharStream charStream = null;
         try {
             charStream = CharStreams.fromFileName(relativeImportFilePath);
         } catch (IOException e) {
-            System.out.println("File -> "+ absoluteImportFilePath + " <- does not exist.");
+            System.out.println("File -> " + absoluteImportFilePath + " <- does not exist.");
             e.printStackTrace();
         }
 
@@ -227,10 +229,11 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
             expr = this.visit(ctx.expr());
         }
 
-        if (varType.equalType(expr))
-            this.ctxManager.createVariable(varNames, expr);
-        else
-            this.ctxManager.createVariable(varNames, varType);
+        this.ctxManager.createVariable(varNames, varType);
+
+        if (!expr.isVoid())
+            for (String name : varNames)
+                this.ctxManager.setVariable(name, expr);
 
         // print out the variable map
         if (debug) {
@@ -278,7 +281,7 @@ public class EvalVisitor extends PascalBaseVisitor<Value> {
         }
 
         // It's an array type
-    //    if (ctx.varType() != null)
+        //    if (ctx.varType() != null)
 
         if (ctx.arrayAlloc() != null) {
             Value arrayAlloc = this.visit(ctx.arrayAlloc());
