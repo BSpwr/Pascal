@@ -33,9 +33,9 @@ for folder in "${test_folders[@]}"; do
     outfile=${i//$src_extension/$out_extension}
 
     if [ -f "$infile" ]; then
-      result=$(build/install/Pascal2/bin/Pascal2 "${i}" <"$infile")
+      result=$(build/install/Pascal/bin/Pascal "${i}" <"$infile")
     else
-      result=$(build/install/Pascal2/bin/Pascal2 "${i}")
+      result=$(build/install/Pascal/bin/Pascal "${i}")
     fi
 
     if [ ! -f "$outfile" ]; then
