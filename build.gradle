@@ -4,12 +4,7 @@ plugins {
     id "application"
 }
 
-apply plugin: 'java-library'
-
 group 'pascal'
-version '1.0-SNAPSHOT'
-
-sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
@@ -49,5 +44,5 @@ task runInterpreter(type: Exec) {
 
 task runTests(type: Exec) {
     commandLine 'bash', 'runTests.bash'
-
+    ignoreExitValue true
 }

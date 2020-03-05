@@ -6,7 +6,6 @@ echo 'Pascal Interpreter Testing Harness for Project 2'
 
 echo "----"
 echo 'Compiling Pascal interpreter'
-echo "----"
 gradle installDist
 
 if [ $? -ne 0 ]; then
@@ -63,7 +62,10 @@ for folder in "${test_folders[@]}"; do
 done
 
 failed=$((total - passed))
-
 echo "----"
 echo "$passed TESTS PASSED"
 echo "$failed TESTS FAILED"
+
+if [ $failed -ne 0 ]; then
+  return 1
+fi
