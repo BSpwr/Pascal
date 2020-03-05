@@ -38,7 +38,7 @@ jar {
 }
 
 task runInterpreter(type: Exec) {
-    commandLine 'build/install/Pascal2/bin/Pascal2', 'src/test/fib_test.pas'
+    commandLine 'build/install/Pascal/bin/Pascal', 'src/test/fib_test.pas'
     ignoreExitValue true
 }
 
