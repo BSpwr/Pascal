@@ -14,6 +14,7 @@ Fully working:
 - while-do and for-do loops
 - break and continue keywords inside loops
 - user-defined procedures and functions
+- robust scopes
 
 ## Bonus Features
 Fully working:
