@@ -13,7 +13,9 @@ To execute: Run `bash ./runTests.bash` from the same directory this file is in.
 Fully working:
 - while-do and for-do loops
 - break and continue keywords inside loops
-- user-defined procedures and functions (with static scope)
+- user-defined procedures and functions
+- robust scopes
+- everything from P1
 
 ## Bonus Features
 Fully working:
@@ -25,5 +27,4 @@ Fully working:
 - importing files with the `uses` keyword
 - recursion in functions
 - string types
-- boolean types (and boolean arith)
-- arrays
+- boolean types (and boolean arithmetic)
