@@ -13,3 +13,5 @@ begin
     st := "Hello, world."
     writeln(hello_world);
 end;
+
+end .
