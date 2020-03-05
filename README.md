@@ -1,46 +1,30 @@
-# Pascal
-A Pascal Interpreter (with limitations)
+## Name
+Boris Ermakov-Spektor and Austin Kee
 
-##Getting Started
+## Build and Test
 
-To run a program with this Antlr Grammar,
+The build script requires that "gradle","antlr4" and "javac" be in the PATH.
 
-```
-antlr4 PascalR.g4
-javac PascalR*.java 
-grun PascalR program <NAME_OF_TEST_FILE>
-```
-To get debugging print outs, run
+A script to build the project and run all tests is in the root folder.
 
-```
-grun PascalR debug <NAME_OF_TEST_FILE>
-```
+To execute: Run `bash ./runTests.bash` from the same directory this file is in.
 
-##Features Supported
+## Features
+Fully working:
+- while-do and for-do loops
+- break and continue keywords inside loops
+- user-defined procedures and functions
+- robust scopes
+- everything from P1
 
-* Enums
-* Constants
+## Bonus Features
+Fully working:
+- formal parameter passing in procedures/functions
 
-* Primitive Types
-* Strings
-* Arrays (declaration only)
-
-* Traditional Style Comments (*..*)
-* Arithmetic
-* Comparison
-* Nested If-Then-Else and Case Statements
-
-* Readln
-* Writeln
-* Exp
-* Ln
-* Sqrt
-* Sin
-* Cos
-
-##Features To Be Implemented
-* Dereference Arrays
-* Modify Array Content
-* Proper Loops
-* Type Alias and Type Cloning
-* String dereference Character
+## Extra Features (Not on assignment sheet)
+Fully working:
+- implicitly casting up from integer to real
+- importing files with the `uses` keyword
+- recursion in functions
+- string types
+- boolean types (and boolean arithmetic)
