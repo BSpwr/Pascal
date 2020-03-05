@@ -2,7 +2,6 @@ package pascal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Stack;
 
 public class Context{
     HashMap<String, Value> variables;
@@ -18,25 +17,29 @@ public class Context{
 
     HashMap<String, Function> functionMap;
 
+    ArrayList<String> overrides;
+
     public Context(){
-        variables = new HashMap<String, Value>();
-        constants = new HashMap<String, Value>();
-        enumDataType = new HashMap<String, ArrayList<String>>();
+        this.variables = new HashMap<String, Value>();
+        this.constants = new HashMap<String, Value>();
+        this.enumDataType = new HashMap<String, ArrayList<String>>();
 
-        enumVariableType = new HashMap<String, String>();
-        enumVariableValue = new HashMap<String, String>();
+        this.enumVariableType = new HashMap<String, String>();
+        this.enumVariableValue = new HashMap<String, String>();
 
-        functionMap = new HashMap<String, Function>();
+        this.functionMap = new HashMap<String, Function>();
+        this.overrides = new ArrayList<String>();
     }
 
     public Context(Context ctx){
-        variables = ctx.variables;
-        constants = ctx.constants;
-        enumDataType = ctx.enumDataType;
+        this.variables = ctx.variables;
+        this.constants = ctx.constants;
+        this.enumDataType = ctx.enumDataType;
 
-        enumVariableType = ctx.enumVariableType;
-        enumVariableValue = ctx.enumVariableValue;
-        functionMap = ctx.functionMap;
+        this.enumVariableType = ctx.enumVariableType;
+        this.enumVariableValue = ctx.enumVariableValue;
+        this.functionMap = ctx.functionMap;
+        this.overrides = ctx.overrides;
     }
 
 }
